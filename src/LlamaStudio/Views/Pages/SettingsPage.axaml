@@ -119,13 +119,10 @@
                         <TextBlock Grid.Column="0" Text="{Binding UpdateChannelLabel}"
                                    FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
                                    ToolTip.Tip="{Binding TtUpdateChannel}"/>
-                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedItem="{Binding UpdateChannel}"
+                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedItem="{Binding SelectedUpdateChannel}"
+                                  ItemsSource="{Binding UpdateChannelOptions}"
                                   Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
-                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8">
-                            <ComboBoxItem Content="{Binding StableChannel, ElementName=Root}"/>
-                            <ComboBoxItem Content="{Binding PrereleaseChannel, ElementName=Root}"/>
-                            <ComboBoxItem Content="{Binding NightlyChannel, ElementName=Root}"/>
-                        </ComboBox>
+                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
                     </Grid>
 
                     <!-- App Update Section -->

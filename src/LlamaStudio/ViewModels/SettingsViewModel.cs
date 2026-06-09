@@ -29,7 +29,25 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] int _defaultPort = 8080;
     [ObservableProperty] string _defaultGpuLayers = "all";
     [ObservableProperty] bool _flashAttention = true;
-    [ObservableProperty] Core.Enums.UpdateChannel _updateChannel = Core.Enums.UpdateChannel.Stable;
+    string _selectedUpdateChannel = "Stable";
+    public string SelectedUpdateChannel
+    {
+        get => _selectedUpdateChannel;
+        set
+        {
+            if (SetProperty(ref _selectedUpdateChannel, value))
+            {
+                _settings.UpdateChannel = value switch
+                {
+                    "PreRelease" => Core.Enums.UpdateChannel.PreRelease,
+                    "Nightly" => Core.Enums.UpdateChannel.Nightly,
+                    _ => Core.Enums.UpdateChannel.Stable
+                };
+                ResetAutoSave();
+            }
+        }
+    }
+    public string[] UpdateChannelOptions => new[] { "Stable", "PreRelease", "Nightly" };
     [ObservableProperty] string _selectedLanguage = "en";
     [ObservableProperty] string _updateStatus = "Not checked";
     [ObservableProperty] string _appVersion = "0.0.0";
@@ -197,7 +215,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         DefaultGpuLayers = _settings.DefaultGpuLayers ?? "all";
         DefaultGpuLayersText = _settings.DefaultGpuLayers ?? "all";
         FlashAttention = _settings.FlashAttention;
-        UpdateChannel = _settings.UpdateChannel;
+        SelectedUpdateChannel = _settings.UpdateChannel switch
+            {
+                Core.Enums.UpdateChannel.PreRelease => "PreRelease",
+                Core.Enums.UpdateChannel.Nightly => "Nightly",
+                _ => "Stable"
+            };
         SelectedLanguage = _loc.Language;
 
         // Monitoring settings
@@ -465,7 +488,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ResetAutoSave();
         }
     partial void OnFlashAttentionChanged(bool value) => ResetAutoSave();
-    partial void OnUpdateChannelChanged(Core.Enums.UpdateChannel value) => ResetAutoSave();
     partial void OnHasUpdateAvailableChanged(bool value) { OnPropertyChanged(nameof(AppUpdateStatus)); }
     partial void OnLatestVersionChanged(string value) { OnPropertyChanged(nameof(AppUpdateStatus)); OnPropertyChanged(nameof(DownloadUpdateBtn)); }
     partial void OnIsDownloadingChanged(bool value) { OnPropertyChanged(nameof(DownloadUpdateBtn)); }
@@ -530,7 +552,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _settings.DefaultPort = DefaultPort;
         _settings.DefaultGpuLayers = DefaultGpuLayers;
         _settings.FlashAttention = FlashAttention;
-        _settings.UpdateChannel = UpdateChannel;
+        _settings.UpdateChannel = SelectedUpdateChannel switch
+            {
+                "PreRelease" => Core.Enums.UpdateChannel.PreRelease,
+                "Nightly" => Core.Enums.UpdateChannel.Nightly,
+                _ => Core.Enums.UpdateChannel.Stable
+            };
 
         // Monitoring settings
         _settings.MonitorOpacity = MonitorOpacity;
