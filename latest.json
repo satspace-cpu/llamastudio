@@ -1,6 +1,6 @@
 {
-    "publishedAt":  "2026-06-09T17:30:34Z",
-    "changelog":  "Что нового:\n- Полностью переработан механизм обновлений приложения.\n- Добавлено кэширование информации об обновлениях для обхода лимитов GitHub API.\n- Улучшен скрипт перезапуска при обновлении.\n- Исправлена проблема с обнаружением обновлений.\n- Добавлено детальное логирование процесса обновлений.\n- Добавлен диалог подтверждения перезапуска после скачивания обновления.",
-    "version":  "1.1.1",
-    "downloadUrl":  "https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.1/LlamaStudio.exe"
+    "publishedAt":  "2026-06-09T19:08:59Z",
+    "changelog":  "Что нового:\n- Обновлена страница поддержки.\n- Добавлена ссылка на чат поддержки.\n- Добавлена ссылка на бота-помощника @LlamaStudioSupport_bot.",
+    "version":  "1.1.2",
+    "downloadUrl":  "https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.2/LlamaStudio.exe"
 }
