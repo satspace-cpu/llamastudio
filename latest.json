@@ -1,6 +1,6 @@
 {
-  "version": "1.0.7",
-  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.0.7/LlamaStudio.exe",
-  "changelog": "Исправления:\n- Переход на статический JSON для проверки обновлений (убраны лимиты GitHub API).\n- Теперь обновления работают стабильно для тысяч пользователей.\n- Восстановлен интервал проверки каждые 5 минут.",
-  "publishedAt": "2026-06-09T13:00:00Z"
+  "version": "1.0.8",
+  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.0.8/LlamaStudio.exe",
+  "changelog": "Тестовый релиз для проверки механизма обновлений через latest.json.",
+  "publishedAt": "2026-06-09T14:00:00Z"
 }
