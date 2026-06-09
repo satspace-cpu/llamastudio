@@ -1,0 +1,173 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LlamaStudio.ViewModels"
+        xmlns:controls="using:LlamaStudio.Controls"
+        xmlns:converters="using:LlamaStudio.Converters"
+        x:Class="LlamaStudio.Views.MonitoringWindow"
+        x:DataType="vm:MonitoringViewModel"
+        Title="Llama Studio Monitor"
+        Width="380" MinWidth="320" SizeToContent="Height" MinHeight="200" MaxHeight="700"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="None"
+        ShowInTaskbar="False"
+        Background="#0F172A"
+        Opacity="{Binding WindowOpacity}"
+        Topmost="{Binding IsAlwaysOnTop}">
+    <Window.Resources>
+        <converters:ServerStateBrushConverter x:Key="ServerStateToBrush"/>
+        <converters:PercentToDashConverter x:Key="PercentToDash"/>
+    </Window.Resources>
+    <Panel>
+        <!-- Title bar � drag zone -->
+        <Border Background="#1a1a2e" Height="34" VerticalAlignment="Top">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="#A78BFA" VerticalAlignment="Center" Margin="10,0"/>
+                <Button x:Name="CloseBtn" Grid.Column="1" Background="Transparent" BorderThickness="0" Width="30" Height="30" Cursor="Hand" Click="CloseButton_Click">
+                    <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" Width="12" Height="12" Foreground="#EF4444"/>
+                </Button>
+            </Grid>
+        </Border>
+        <!-- Content -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,34,0,0">
+            <StackPanel Spacing="8" Margin="10">
+                <!-- TPS Gauge -->
+                <controls:TpsGaugeControl IsVisible="{Binding ShowTps}"/>
+
+                <!-- Metrics -->
+                <StackPanel>
+                    <!-- BARS STYLE -->
+                    <Border IsVisible="{Binding BarsVisible}">
+                        <StackPanel Spacing="6">
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowVram}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding VramLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#3B82F6"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding VramUsedText}" FontSize="10" Foreground="#E2E8F0" TextAlignment="Right"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding VramPercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="#3B82F6"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowRam}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding RamLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#10B981"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding RamUsedText}" FontSize="10" Foreground="#E2E8F0" TextAlignment="Right"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding RamPercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="#10B981"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowGpuTemp}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding GpuTempLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#EF4444"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding GpuTempText}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding GpuTempBrush}"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding GpuTempPercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="{Binding GpuTempBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowPowerDraw}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding PowerLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#FBBF24"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding PowerDrawText}" FontSize="10" Foreground="#E2E8F0"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding PowerPercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="#FBBF24"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowGpuCore}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding GpuCoreLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#8B5CF6"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding GpuCoreText}" FontSize="10" FontWeight="SemiBold" Foreground="#8B5CF6"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding GpuCorePercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="#8B5CF6"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1a1a2e" CornerRadius="6" Padding="8" IsVisible="{Binding ShowFanSpeed}">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="Auto,* Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding FanLabel}" FontSize="10" FontWeight="SemiBold" Foreground="#06B6D4"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding FanSpeedText}" FontSize="10" FontWeight="SemiBold" Foreground="#06B6D4"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding FanSpeedPercent}" Maximum="100" Height="4" CornerRadius="2" Background="#2D1B69" Foreground="#06B6D4"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CIRCLES STYLE -->
+                    <Border IsVisible="{Binding CirclesVisible}">
+                        <UniformGrid Columns="3">
+                            <Border Background="#1E1B4B" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowVram}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="#3B82F6" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding VramPercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding VramPercent, StringFormat='{}{0:F0}%'}" FontSize="10" FontWeight="Bold" Foreground="#3B82F6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding VramLabel}" FontSize="9" Foreground="#3B82F6" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#042F2E" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowRam}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="#10B981" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding RamPercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding RamPercent, StringFormat='{}{0:F0}%'}" FontSize="10" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding RamLabel}" FontSize="9" Foreground="#10B981" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#2D1B1B" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowGpuTemp}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="{Binding GpuTempBrush}" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding GpuTempPercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding GpuTempText}" FontSize="10" FontWeight="Bold" Foreground="{Binding GpuTempBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding GpuTempLabel}" FontSize="9" Foreground="#EF4444" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#2D2610" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowPowerDraw}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="#FBBF24" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding PowerPercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding PowerPercent, StringFormat='{}{0:F0}%'}" FontSize="10" FontWeight="Bold" Foreground="#FBBF24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding PowerLabel}" FontSize="9" Foreground="#FBBF24" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#1E1533" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowGpuCore}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="#8B5CF6" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding GpuCorePercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding GpuCoreText}" FontSize="10" FontWeight="Bold" Foreground="#8B5CF6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding GpuCoreLabel}" FontSize="9" Foreground="#8B5CF6" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#0C2D33" CornerRadius="8" Padding="8" Margin="2" IsVisible="{Binding ShowFanSpeed}" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                    <Grid Width="52" Height="52">
+                                         <Ellipse Stroke="#2D1B69" StrokeThickness="6" Fill="Transparent"/>
+                                         <Path Stroke="#06B6D4" StrokeThickness="6" Fill="Transparent" Stretch="None"
+                           Data="{Binding FanSpeedPercent, Converter={StaticResource PercentToDash}, ConverterParameter='26'}"/>
+                                        <TextBlock Text="{Binding FanSpeedText}" FontSize="10" FontWeight="Bold" Foreground="#06B6D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding FanLabel}" FontSize="9" Foreground="#06B6D4" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+</Window>

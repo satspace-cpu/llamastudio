@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:converters="using:LlamaStudio.Converters"
+             x:Class="LlamaStudio.Views.Pages.MonitoringPage"
+             x:DataType="vm:MonitoringViewModel"
+             x:FieldModifier="public">
+    <UserControl.Resources>
+        <converters:StringEqualBrushConverter x:Key="StringEqualBrush"/>
+        <converters:ServerStateBrushConverter x:Key="ServerStateToBrush"/>
+        <converters:PercentToDashConverter x:Key="PercentToDash"/>
+        <converters:BoolToGridLengthConverter x:Key="BoolToGridLength"/>
+    </UserControl.Resources>
+    <ScrollViewer>
+        <StackPanel Spacing="16" Margin="20">
+            <!-- Title row -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
+                <Border x:Name="FloatingBtnBorder" Grid.Column="1" Background="#7C3AED" CornerRadius="8" Padding="16,9" Cursor="Hand" PointerPressed="OpenFloating_Click">
+                    <TextBlock Text="{Binding OpenFloatingBtn}" Foreground="White" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                </Border>
+            </Grid>
+
+            <!-- TPS Gauge -->
+            <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
+                        <!-- Generation tok/s (left) -->
+                        <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding TpsLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding TpsText}" FontSize="48" FontWeight="Bold" Foreground="#FBBF24"/>
+                                <TextBlock Text="tok/s" FontSize="16" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Separator (center) -->
+                        <Border Grid.Column="1" Width="1" Background="#334155" Margin="20,0"/>
+
+                        <!-- Prompt tok/s (right) -->
+                        <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding TpsPromptLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding PromptTpsText}" FontSize="48" FontWeight="Bold" Foreground="#8B5CF6"/>
+                                <TextBlock Text="tok/s" FontSize="16" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                       <ProgressBar Value="{Binding TpsPercent}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="#FBBF24"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Metrics Area -->
+            <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16">
+                <StackPanel>
+                    <!-- BARS STYLE -->
+                    <Border IsVisible="{Binding BarsVisible}">
+                        <StackPanel Spacing="14">
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowVram}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding VramLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#3B82F6"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding VramUsedText}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextAlignment="Right"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding VramPercent}" Maximum="100" Height="12" CornerRadius="6"                        Background="{DynamicResource ProgressTrack}" Foreground="#3B82F6"/>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowRam}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding RamLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding RamUsedText}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextAlignment="Right"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding RamPercent}" Maximum="100" Height="12" CornerRadius="6"                        Background="{DynamicResource ProgressTrack}" Foreground="#10B981"/>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowGpuTemp}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding GpuTempLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#EF4444"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding GpuTempText}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding GpuTempBrush}"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding GpuTempPercent}" Maximum="100" Height="12" CornerRadius="6"                        Background="{DynamicResource ProgressTrack}" Foreground="{Binding GpuTempBrush}"/>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowPowerDraw}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding PowerLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#FBBF24"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding PowerDrawText}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding PowerPercent}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="#FBBF24"/>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowGpuCore}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding GpuCoreLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#8B5CF6"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding GpuCoreText}" FontSize="12" FontWeight="SemiBold" Foreground="#8B5CF6"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding GpuCorePercent}" Maximum="100" Height="12" CornerRadius="6"                        Background="{DynamicResource ProgressTrack}" Foreground="#8B5CF6"/>
+                            </StackPanel>
+                            <StackPanel Spacing="4" IsVisible="{Binding ShowFanSpeed}">
+                                <Grid ColumnDefinitions="Auto,* Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding FanLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#06B6D4"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding FanSpeedText}" FontSize="12" FontWeight="SemiBold" Foreground="#06B6D4"/>
+                                </Grid>
+                                <ProgressBar Value="{Binding FanSpeedPercent}" Maximum="100" Height="12" CornerRadius="6"                        Background="{DynamicResource ProgressTrack}" Foreground="#06B6D4"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CIRCLES STYLE -->
+                    <Border IsVisible="{Binding CirclesVisible}">
+                        <UniformGrid Columns="3">
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowVram}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="#3B82F6" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding VramPercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding VramPercent, StringFormat='{}{0:F0}%'}" FontSize="14" FontWeight="Bold" Foreground="#3B82F6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding VramLabel}" FontSize="11" Foreground="#3B82F6" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding VramUsedText}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Border>
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowRam}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="#10B981" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding RamPercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding RamPercent, StringFormat='{}{0:F0}%'}" FontSize="14" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding RamLabel}" FontSize="11" Foreground="#10B981" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding RamUsedText}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Border>
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowGpuTemp}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="{Binding GpuTempBrush}" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding GpuTempPercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding GpuTempText}" FontSize="14" FontWeight="Bold" Foreground="{Binding GpuTempBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding GpuTempLabel}" FontSize="11" Foreground="#EF4444" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowPowerDraw}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="#FBBF24" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding PowerPercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding PowerPercent, StringFormat='{}{0:F0}%'}" FontSize="14" FontWeight="Bold" Foreground="#FBBF24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding PowerLabel}" FontSize="11" Foreground="#FBBF24" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PowerDrawText}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Border>
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowGpuCore}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="#8B5CF6" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding GpuCorePercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding GpuCoreText}" FontSize="14" FontWeight="Bold" Foreground="#8B5CF6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding GpuCoreLabel}" FontSize="11" Foreground="#8B5CF6" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                      <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16" Margin="4" IsVisible="{Binding ShowFanSpeed}" HorizontalAlignment="Stretch"
+                                         BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                 <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                     <Grid Width="80" Height="80">
+                                          <Ellipse Stroke="{DynamicResource ProgressTrack}" StrokeThickness="8" Fill="Transparent"/>
+                                          <Path Stroke="#06B6D4" StrokeThickness="8" Fill="Transparent" Stretch="None"
+                           Data="{Binding FanSpeedPercent, Converter={StaticResource PercentToDash}, ConverterParameter='40'}"/>
+                                        <TextBlock Text="{Binding FanSpeedText}" FontSize="14" FontWeight="Bold" Foreground="#06B6D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding FanLabel}" FontSize="11" Foreground="#06B6D4" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Settings Panel -->
+            <Border Background="{DynamicResource ThemeCard}" CornerRadius="12" Padding="16">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding SettingsTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource GpuMonitorHeader}"/>
+                    <TextBlock Text="{Binding StyleTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{Binding StyleBars}" Command="{Binding SetStyleCommand}" CommandParameter="Bars" Background="{Binding DisplayStyle, Converter={StaticResource StringEqualBrush}, ConverterParameter=Bars}" Foreground="{DynamicResource ThemeTextPrimary}" BorderThickness="0" CornerRadius="8" Padding="16,8"/>
+                        <Button Content="{Binding StyleCircles}" Command="{Binding SetStyleCommand}" CommandParameter="Circles" Background="{Binding DisplayStyle, Converter={StaticResource StringEqualBrush}, ConverterParameter=Circles}" Foreground="{DynamicResource ThemeTextPrimary}" BorderThickness="0" CornerRadius="8" Padding="16,8"/>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Grid.Column="0" Text="{Binding OpacityLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Slider Grid.Column="1" Value="{Binding WindowOpacity}" Minimum="0.3" Maximum="1" TickFrequency="0.05"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ToggleSwitch IsChecked="{Binding IsAlwaysOnTop}"/>
+                        <TextBlock Text="{Binding AlwaysOnTopLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding VisibleMetricsLabel}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                    <UniformGrid Columns="3">
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowTps}"/><TextBlock Text="{Binding TpsLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowVram}"/><TextBlock Text="{Binding VramLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowRam}"/><TextBlock Text="{Binding RamLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowGpuTemp}"/><TextBlock Text="{Binding GpuTempLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowPowerDraw}"/><TextBlock Text="{Binding PowerLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowGpuCore}"/><TextBlock Text="{Binding GpuCoreLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"><ToggleSwitch IsChecked="{Binding ShowFanSpeed}"/><TextBlock Text="{Binding FanLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/></StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

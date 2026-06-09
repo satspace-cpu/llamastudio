@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LlamaStudio.Views.Pages.ProfilesPage"
+             x:DataType="vm:ProfilesViewModel"
+             x:Name="Root">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" Padding="16"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,8">
+            <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"
+                                Foreground="{DynamicResource ThemeTextPrimary}" VerticalAlignment="Center"/>
+                    <Button Command="{Binding CreateProfileCommand}"
+                            Content="{Binding NewProfileBtn}"
+                            Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                            Padding="16,8" CornerRadius="8"/>
+                    <Button Command="{Binding ImportProfileCommand}"
+                            Content="{Binding ImportJsonBtn}"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="12,8" CornerRadius="8"/>
+                </StackPanel>
+                   <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox Text="{Binding ProfileName, Mode=TwoWay}"
+                                      Watermark="{Binding NamePlaceholder}"
+                                      Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                      BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8"
+                                      CornerRadius="8" MinWidth="200"/>
+                            <TextBox Text="{Binding ProfileDescription, Mode=TwoWay}"
+                                      Watermark="{Binding DescPlaceholder}"
+                                      Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                      BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8"
+                                      CornerRadius="8" MinWidth="300"/>
+                            <Button Command="{Binding SelectModelCommand}"
+                                    Content="{Binding SelectModelPlaceholder}"
+                                    Background="{DynamicResource BtnPurple}" Foreground="{DynamicResource BadgeText}"
+                                    Padding="12,8" CornerRadius="8"/>
+                            <TextBlock Text="{Binding SelectedModelPath}"
+                                        Foreground="{DynamicResource ThemeTextSecondary}" FontSize="12"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ListBox ItemsSource="{Binding Profiles}"
+                 SelectedItem="{Binding SelectedProfile}"
+                 Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{DynamicResource ThemeSurface}" CornerRadius="10"
+                            Margin="0,0,0,8" Padding="16"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                <Border Background="{DynamicResource BadgeReasoning}" CornerRadius="6"
+                                        Padding="6,3"
+                                        IsVisible="{Binding IsDefault}">
+                                    <TextBlock Text="{Binding DataContext.DefaultBadge, ElementName=Root}"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Description}"
+                                       FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <TextBlock Text="{Binding ContextSize, StringFormat='ctx: {0}'}"
+                                           FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                <TextBlock Text="{Binding GpuLayers, StringFormat='gpu: {0}'}"
+                                           FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                <TextBlock Text="{Binding Temperature, StringFormat='temp: {0:F2}'}"
+                                           FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ModelPath}"
+                                       FontSize="11" Foreground="{DynamicResource GpuMonitorHeader}"
+                                       TextTrimming="CharacterEllipsis"/>
+                       <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Command="{Binding DataContext.SetDefaultCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.SetDefaultBtn, ElementName=Root}"
+                                        Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                        Padding="10,6" CornerRadius="6"/>
+                                <Button Command="{Binding DataContext.EditProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.EditBtn, ElementName=Root}"
+                               Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                                        Padding="10,6" CornerRadius="6"/>
+                                <Button Command="{Binding DataContext.DuplicateProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.DuplicateBtn, ElementName=Root}"
+                                        Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                        Padding="10,6" CornerRadius="6"/>
+                                <Button Command="{Binding DataContext.ExportProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.ExportBtn, ElementName=Root}"
+                                        Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                        Padding="10,6" CornerRadius="6"/>
+                                <Button Command="{Binding DataContext.DeleteProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.DeleteBtn, ElementName=Root}"
+                                        Background="{DynamicResource BtnDanger}" Foreground="{DynamicResource BadgeText}"
+                                        Padding="10,6" CornerRadius="6"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Command="{Binding DataContext.SaveSettingsToProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.SaveSettingsBtn, ElementName=Root}"
+                               Background="{DynamicResource BtnPurple}" Foreground="{DynamicResource BadgeText}"
+                                        Padding="10,6" CornerRadius="6"/>
+                                <Button Command="{Binding DataContext.StartServerWithProfileCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding DataContext.StartServerBtn, ElementName=Root}"
+                                        Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                        Padding="10,6" CornerRadius="6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,491 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Hermass.ViewModels"
+                xmlns:models="using:Hermass.Core.Models"
+                xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+              xmlns:md="https://github.com/whistyun/Markdown.Avalonia"
+ x:Class="Hermass.Views.Pages.ChatPage"
+               x:DataType="vm:ChatViewModel">
+
+    <DockPanel Background="#0C1222">
+        <!-- Top bar -->
+        <Border DockPanel.Dock="Top" Background="#131B2E" Padding="12,8"
+                BorderBrush="#1E293B" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Ellipse Width="8" Height="8" Fill="{Binding ServerState, Converter={StaticResource ServerStateBrushConverter}}"/>
+                <TextBlock FontSize="12" VerticalAlignment="Center" Foreground="#94A3B8">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource ServerConnectionStatusConverter}">
+                            <Binding Path="ServerState"/>
+                            <Binding Path="ServerModelName"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+
+                <Button Command="{Binding NewSessionCommand}" Content="{Binding NewSessionBtn}"
+                        Background="#007ACC" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,5" CornerRadius="4"
+                        VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"/>
+
+                <Button Command="{Binding DeleteSessionCommand}" Content="{Binding DeleteSessionBtn}"
+                        Background="#CC3333" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,5" CornerRadius="4"
+                        VerticalAlignment="Center" FontSize="12"
+                        IsEnabled="{Binding SelectedSession}"/>
+
+<ToggleButton IsChecked="{Binding McpToolsEnabled, Mode=TwoWay}"
+                                Content="{Binding McpToolsLabel}"
+                                Foreground="#CCCCCC" Background="#2D2D2D"
+                                VerticalAlignment="Center" FontSize="12"
+                                Padding="10,5" CornerRadius="4"/>
+
+                <Button Command="{Binding ToggleMcpServersCommand}"
+                        Content="{Binding McpServersLabel}"
+                        Background="#2D2D2D" Foreground="#CCCCCC"
+                        Padding="12,5" CornerRadius="4"
+                        VerticalAlignment="Center" FontSize="12"/>
+
+                <Button Command="{Binding ToggleSettingsCommand}"
+                        Content="{Binding SettingsLabel}"
+                        Background="#2D2D2D" Foreground="#CCCCCC"
+                        Padding="12,5" CornerRadius="4"
+                        VerticalAlignment="Center" FontSize="12"/>
+            </StackPanel>
+        </Border>
+
+        <!-- MCP Servers panel -->
+        <Border DockPanel.Dock="Top" Background="#1E1E1E"
+                IsVisible="{Binding ShowMcpServers}">
+            <DockPanel Margin="12">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding McpServersTitle}" FontSize="14" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                    <Button Command="{Binding ToggleMcpServersCommand}" Content="✕" Background="#2D2D2D" Foreground="#CCCCCC" Padding="8,4" CornerRadius="4" FontSize="12"/>
+                </StackPanel>
+
+                <!-- Add server form -->
+                <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Добавить MCP-сервер" FontSize="12" FontWeight="SemiBold" Foreground="#CCCCCC"/>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="Имя:" FontSize="11" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding NewServerName}" FontSize="11" Background="#1E1E1E" Foreground="#E0E0E0" BorderBrush="#333333" Padding="6,4" CornerRadius="3"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="Тип:" FontSize="11" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding TransportTypes}" SelectedItem="{Binding SelectedTransportType}" FontSize="11" Background="#1E1E1E" Foreground="#E0E0E0" BorderBrush="#333333" Padding="6,4" CornerRadius="3" Width="120" HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <!-- Stdio fields -->
+                        <StackPanel IsVisible="{Binding SelectedTransportType, Converter={StaticResource McpTransportToVisibilityConverter}, ConverterParameter=Stdio}" Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="Команда:" FontSize="11" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerCommand}" FontSize="11" Background="#1E1E1E" Foreground="#E0E0E0" BorderBrush="#333333" Padding="6,4" CornerRadius="3"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="Аргументы:" FontSize="11" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerArgs}" FontSize="11" Background="#1E1E1E" Foreground="#E0E0E0" BorderBrush="#333333" Padding="6,4" CornerRadius="3"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- SSE fields -->
+                        <StackPanel IsVisible="{Binding SelectedTransportType, Converter={StaticResource McpTransportToVisibilityConverter}, ConverterParameter=Sse}" Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="URL:" FontSize="11" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerUrl}" FontSize="11" Background="#1E1E1E" Foreground="#E0E0E0" BorderBrush="#333333" Padding="6,4" CornerRadius="3" Watermark="http://127.0.0.1:8080"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Button Command="{Binding AddMcpServerCommand}" Content="Добавить" Background="#007ACC" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,5" CornerRadius="4" FontSize="11" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Server list -->
+                <ItemsControl ItemsSource="{Binding McpServers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="4"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Padding="10">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Ellipse Grid.Column="0" Width="8" Height="8" Fill="{Binding IsConnected, Converter={StaticResource McpConnectedToBrushConverter}}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="#4EC9B0"/>
+                                            <Border Background="#333333" Padding="4,1" CornerRadius="2">
+                                                <TextBlock Text="{Binding TransportType}" FontSize="10" Foreground="#888888"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding ToolsCount}" FontSize="10" Foreground="#888888"/>
+                                            <TextBlock Text="инструментов" FontSize="10" Foreground="#666666"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding LastError}" FontSize="10" Foreground="#CC3333" MaxLines="1" TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding LastError, Converter={StaticResource NotNullConverter}}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                        <ToggleButton IsChecked="{Binding Enabled}" Background="Transparent" Foreground="#CCCCCC" Padding="4"
+                                                      ToolTip.Tip="Включить/выключить">
+                                            <materialIcons:MaterialIcon Kind="Cog" Width="14" Height="14"/>
+                                        </ToggleButton>
+                                        <Button Background="Transparent" Foreground="#CC3333" Padding="4"
+                                                Command="{Binding $parent[UserControl].DataContext.RemoveMcpServerCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                ToolTip.Tip="Удалить">
+                                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="240,*">
+            <!-- Sessions sidebar -->
+            <Border Grid.Column="0" Background="#131B2E"
+                    BorderBrush="#1E293B" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding SessionsLabel}"
+                               FontSize="11" FontWeight="SemiBold" Foreground="#64748B"
+                               Margin="12,10,12,6"/>
+                    <ListBox ItemsSource="{Binding Sessions}"
+                             SelectedItem="{Binding SelectedSession}"
+                             Background="Transparent"
+                             BorderThickness="0">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{Binding $parent[UserControl].DataContext.RenameSessionBtn}"
+                                          Command="{Binding $parent[UserControl].DataContext.StartRenameSessionCommand}"
+                                          CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+                                <MenuItem Header="{Binding $parent[UserControl].DataContext.DuplicateSessionBtn}"
+                                          Command="{Binding $parent[UserControl].DataContext.DuplicateSessionCommand}"
+                                          CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+                                <MenuItem Header="{Binding $parent[UserControl].DataContext.ClearSessionBtn}"
+                                          Command="{Binding $parent[UserControl].DataContext.ClearSessionMessagesCommand}"
+                                          CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+                                <MenuItem Header="{Binding $parent[UserControl].DataContext.ExportSessionBtn}"
+                                          Command="{Binding $parent[UserControl].DataContext.ExportSessionCtxCommand}"
+                                          CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+                                <Separator/>
+                                <MenuItem Header="{Binding $parent[UserControl].DataContext.DeleteSessionCtxBtn}"
+                                          Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}"
+                                          CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="8,4" Spacing="2"
+                                            DoubleTapped="SessionItemDoubleTapped"
+                                            PointerPressed="SessionItemPointerPressed">
+                                    <TextBox Text="{Binding $parent[ListBox].DataContext.RenameText, Mode=TwoWay}"
+                                             FontSize="11" Foreground="#E2E8F0"
+                                             MaxLines="1"
+                                             Background="#1E1E1E" BorderBrush="#007ACC" BorderThickness="1"
+                                             Padding="6,3" CornerRadius="3"
+                                             IsVisible="{Binding $parent[ListBox].DataContext.IsRenaming}"
+                                             KeyDown="RenameTextBoxKeyDown"
+                                             Watermark="Rename session"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="12"
+                                               Foreground="#E0E0E0" MaxLines="1"
+                                               TextTrimming="CharacterEllipsis"
+                                               IsVisible="{Binding $parent[ListBox].DataContext.IsRenaming, Converter={StaticResource InvertedBoolConverter}}"/>
+                                    <TextBlock Text="{Binding UpdatedAt}"
+                                               FontSize="10" Foreground="#666666"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Main chat area -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto">
+               <!-- Messages area -->
+                 <ScrollViewer Grid.Row="0" x:Name="MessagesScroll" x:FieldModifier="public"
+                                VerticalScrollBarVisibility="Auto"
+                                HorizontalScrollBarVisibility="Disabled"
+                                PointerWheelChanged="MessagesScrollPointerWheelChanged">
+                     <Panel Margin="0,20,0,120">
+                         <!-- No session placeholder -->
+                         <StackPanel IsVisible="{Binding SelectedSession, Converter={StaticResource NullVisibilityConverter}}"
+                                     VerticalAlignment="Center" HorizontalAlignment="Center"
+                                     Spacing="8" Panel.Margin="0,0,0,0">
+                        <TextBlock Text="Привет!" FontSize="22" FontWeight="SemiBold"
+                                         Foreground="#E2E8F0" HorizontalAlignment="Center"/>
+                             <TextBlock Text="Введите сообщение или загрузите файлы, чтобы начать работу"
+                                        FontSize="13" Foreground="#64748B"
+                                        HorizontalAlignment="Center"/>
+                         </StackPanel>
+
+                         <!-- Messages -->
+                         <ItemsControl ItemsSource="{Binding Messages}"
+                                       IsVisible="{Binding SelectedSession}"
+                                       VerticalAlignment="Top">
+                             <ItemsControl.ItemsPanel>
+                                 <ItemsPanelTemplate>
+                                     <StackPanel Spacing="20"/>
+                                 </ItemsPanelTemplate>
+                             </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel HorizontalAlignment="Stretch" Margin="24,0,24,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+                                            <Border Width="28" Height="28" CornerRadius="14"
+                                                    Background="{Binding Role, Converter={StaticResource ChatRoleToBrushConverter}}">
+                                                <TextBlock Text="{Binding Role, Converter={StaticResource ChatRoleToInitialConverter}}"
+                                                           Foreground="{DynamicResource ThemeTextPrimary}" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           FontSize="12"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Role, Converter={StaticResource ChatRoleToNameConverter}}"
+                                                       FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Timestamp}"
+                                                       FontSize="10" Foreground="#64748B"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="(running...)" FontSize="10" Foreground="#E6A817"
+                                                       VerticalAlignment="Center"
+                                                       IsVisible="{Binding IsStreaming}"/>
+                      <Panel HorizontalAlignment="Right"/>
+                                           <!-- Copy — blue -->
+                                              <Button Command="{Binding $parent[UserControl].DataContext.CopyMessageCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      ToolTip.Tip="{Binding $parent[UserControl].DataContext.CopyBtn}"
+                                                      Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                                  <materialIcons:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
+                                                                 Foreground="{DynamicResource IconCopy}"/>
+                                              </Button>
+                                             <!-- Edit — green (only for user) -->
+                                              <Button IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='User'}"
+                                                      Command="{Binding $parent[UserControl].DataContext.EditMessageCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      ToolTip.Tip="{Binding $parent[UserControl].DataContext.EditMessageBtn}"
+                                                      Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                                 <materialIcons:MaterialIcon Kind="Pencil" Width="16" Height="16"
+                                                                 Foreground="{DynamicResource IconEdit}"/>
+                                              </Button>
+                                            <!-- Regenerate — amber (only for assistant) -->
+                                              <Button IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='Assistant'}"
+                                                      Command="{Binding $parent[UserControl].DataContext.RegenerateMessageCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      ToolTip.Tip="{Binding $parent[UserControl].DataContext.RegenerateBtn}"
+                                                      Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                                 <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16"
+                                                                 Foreground="{DynamicResource IconRegenerate}"/>
+                                              </Button>
+                                             <!-- Bookmark — yellow/gray -->
+                                              <Button Command="{Binding $parent[UserControl].DataContext.ToggleBookmarkCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                                 <materialIcons:MaterialIcon Kind="BookmarkOutline" Width="16" Height="16"
+                                                                 Foreground="{Binding IsBookmarked, Converter={StaticResource BookmarkBrushConverter}}"/>
+                                              </Button>
+                                            <!-- Delete — red -->
+                                              <Button Command="{Binding $parent[UserControl].DataContext.DeleteMessageCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      ToolTip.Tip="{Binding $parent[UserControl].DataContext.DeleteMessageBtn}"
+                                                      Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                                <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16"
+                                                                 Foreground="{DynamicResource IconDelete}"/>
+                                              </Button>
+                                        </StackPanel>
+
+                                       <!-- Tool call indicator — only for tool messages -->
+                                         <Border IsVisible="{Binding ToolName, Converter={StaticResource NotNullConverter}}"
+                                                 Background="#1a1f35" BorderBrush="#2d3550" BorderThickness="1"
+                                                 CornerRadius="8" Padding="10,8">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <materialIcons:MaterialIcon Kind="CodeBraces"
+                                                       Width="14" Height="14" Foreground="#A78BFA"/>
+                                                <TextBlock Text="{Binding ToolName}" FontSize="12"
+                                                       Foreground="#A78BFA" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                                <TextBlock Text="·" FontSize="12" Foreground="#4a5568" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Content, Converter={StaticResource ToolResultLengthConverter}}" 
+                                                       FontSize="10" Foreground="#6b7280" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Images in message -->
+                                     <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                                       VerticalScrollBarVisibility="Disabled"
+                                                       MaxHeight="400"
+                                                       IsVisible="{Binding ImageAttachments.Count, Converter={StaticResource GreaterThanConverter}, ConverterParameter=0}">
+                                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                                 <ItemsControl ItemsSource="{Binding ImageAttachments}">
+                                                     <ItemsControl.ItemTemplate>
+                                                         <DataTemplate>
+                                                             <Image Stretch="Uniform" MaxWidth="400" MaxHeight="400"
+                                                                    Source="{Binding Converter={StaticResource Base64ToImageConverter}}"
+                                                                    Margin="0,0,4,0"/>
+                                                         </DataTemplate>
+                             </ItemsControl.ItemTemplate>
+                           </ItemsControl>
+                       </StackPanel>
+                   </ScrollViewer>
+
+                                        <!-- Reasoning block (collapsible) -->
+                                           <Expander IsVisible="{Binding Converter={StaticResource ReasoningVisibilityConverter}}"
+                                                     IsExpanded="True"
+                                                     Background="#1E293B" BorderBrush="#334155" BorderThickness="1"
+                                                     Margin="0,0,0,8">
+                                               <Expander.Header>
+                                                   <Border Padding="10,6,10,6">
+                                                       <Grid ColumnDefinitions="Auto,*,Auto">
+                                                           <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbOn"
+                                                                   Width="14" Height="14" Foreground="#A78BFA" VerticalAlignment="Center"/>
+                                                       <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.ReasoningHeader}"
+                                                                  FontSize="11" FontWeight="SemiBold" Foreground="#A78BFA"
+                                                                  VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                   </Grid>
+                                                   </Border>
+                                               </Expander.Header>
+                                               <Border Padding="10,4,10,8">
+                                                   <md:MarkdownScrollViewer Markdown="{Binding Reasoning}"/>
+                                               </Border>
+                                           </Expander>
+
+                                         <!-- Main message content -->
+                                         <md:MarkdownScrollViewer Markdown="{Binding Content}"/>
+                                     </StackPanel>
+                                 </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                      </Panel>
+                  </ScrollViewer>
+
+              <!-- Input area — wide, centered, llama-ui style -->
+                 <Border Grid.Row="1" HorizontalAlignment="Stretch" Margin="24,12,24,20"
+                         Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                    <!-- Attached images preview — Row 0 (inside input container) -->
+                    <ScrollViewer Grid.Row="0"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  MaxHeight="120"
+                                  Margin="8,8,8,4">
+                        <ScrollViewer.IsVisible>
+                            <Binding Path="AttachedImageBase64.Count" Converter="{StaticResource GreaterThanConverter}" ConverterParameter="0"/>
+                        </ScrollViewer.IsVisible>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ItemsControl ItemsSource="{Binding AttachedImageBase64}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#1E1E1E" CornerRadius="8" Padding="4" Margin="0,0,4,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <Image Stretch="Uniform" Width="80" Height="80" Source="{Binding Converter={StaticResource Base64ToImageConverter}}"/>
+                                                <Button Background="Transparent" Foreground="#CC3333" Padding="4"
+                                                        Command="{Binding $parent[UserControl].DataContext.RemoveImageCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Text input — Row 1 -->
+              <TextBox Grid.Row="1" x:Name="InputTextBox"
+                               Text="{Binding InputText}"
+                               Watermark="Введите сообщение..."
+                               Background="Transparent" Foreground="#E2E8F0"
+                              BorderThickness="0"
+                              Padding="14,12,14,12"
+                              AcceptsReturn="True"
+                              KeyDown="InputKeyDown"
+                              MaxLines="12"
+                              MinHeight="52"
+                              FontSize="14"
+                              TextWrapping="Wrap">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Вырезать" Click="ContextMenuCut_Click"/>
+                                <MenuItem Header="Копировать" Click="ContextMenuCopy_Click"/>
+                                <MenuItem Header="Вставить" Click="ContextMenuPaste_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Выбрать всё" Click="ContextMenuSelectAll_Click"/>
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+
+                    <!-- Toolbar — bottom, separated with border -->
+                    <Border Grid.Row="2"
+                            Background="#252525"
+                            Padding="10,6,10,6"
+                            BorderBrush="#3A3A3A" BorderThickness="0,1,0,0"
+                            CornerRadius="0,0,12,12">
+                        <Grid>
+                            <!-- Left: tools + model name -->
+                            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Left">
+                                <Button x:Name="AttachBtn"
+                                        Background="Transparent" Foreground="#AAAAAA"
+                                        Padding="8" CornerRadius="4"
+                                        ToolTip.Tip="Прикрепить файл"
+                                        Click="AttachBtn_Click">
+                                   <materialIcons:MaterialIcon Kind="Upload"
+                                               Width="16" Height="16"/>
+                                </Button>
+                                <Button x:Name="ImageBtn"
+                                        Background="Transparent" Foreground="#AAAAAA"
+                                        Padding="8" CornerRadius="4"
+                                        ToolTip.Tip="Изображение"
+                                        Click="ImageBtn_Click">
+                                  <materialIcons:MaterialIcon Kind="Image"
+                                               Width="16" Height="16"/>
+                                </Button>
+                                <Button x:Name="McpBtn"
+                                        Background="Transparent" Foreground="#AAAAAA"
+                                        Padding="8" CornerRadius="4"
+                                        Command="{Binding ToggleMcpToolsCommand}"
+                                        ToolTip.Tip="MCP-инструменты">
+                                 <materialIcons:MaterialIcon Kind="Cog"
+                                               Width="16" Height="16"/>
+                                </Button>
+                                <TextBlock Text="{Binding ServerModelName}"
+                                           FontSize="11" Foreground="#888888"
+                                           VerticalAlignment="Center"
+                                           Margin="4,0,0,0"
+                                           MaxWidth="220"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+
+                            <!-- Right: Send/Stop -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Command="{Binding SendMessageCommand}"
+                                        Background="Transparent" Foreground="#AAAAAA"
+                                        Padding="8" CornerRadius="4"
+                                        IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}"
+                                        ToolTip.Tip="Отправить (Enter)">
+                                  <materialIcons:MaterialIcon Kind="Send"
+                                               Width="18" Height="18"/>
+                                </Button>
+                                <Button Command="{Binding StopGenerationCommand}"
+                                        Background="Transparent" Foreground="#AAAAAA"
+                                        Padding="8" CornerRadius="4"
+                                        IsVisible="{Binding IsGenerating}"
+                                        ToolTip.Tip="Остановить">
+                                 <materialIcons:MaterialIcon Kind="StopCircleOutline"
+                                               Width="18" Height="18"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>

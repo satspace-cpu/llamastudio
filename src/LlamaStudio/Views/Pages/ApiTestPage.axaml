@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="LlamaStudio.Views.Pages.ApiTestPage"
+             x:DataType="vm:ApiTestViewModel">
+
+    <ScrollViewer Margin="20">
+        <StackPanel Spacing="20">
+            <!-- Title -->
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+
+            <!-- Connection Settings -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{Binding ConnectionSettingsLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                    <Grid ColumnDefinitions="120,12,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding HostLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="2" Text="{Binding Host}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding PortLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="2" Grid.Column="2" Value="{Binding Port}" Minimum="1" Maximum="65535"
+                                       Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{Binding ApiKeyLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding ApiKey}" Watermark="{Binding ApiKeyOptionalLabel}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="{Binding TimeoutLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="6" Grid.Column="2" Value="{Binding TimeoutSeconds}" Minimum="1" Maximum="300"
+                                       Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Health Check -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding HealthLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                        <Button Command="{Binding TestHealthCommand}" Content="{Binding TestBtn}" Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding HealthResult}" IsReadOnly="True" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource CardSubText}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" Height="120"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Models List -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding ModelsLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                        <Button Command="{Binding TestModelsCommand}" Content="{Binding TestBtn}" Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding ModelsResult}" IsReadOnly="True" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource CardSubText}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" Height="120"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Chat Completion -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding ChatLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                        <Button Command="{Binding TestChatCommand}" Content="{Binding TestBtn}" Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding ChatPrompt}" Watermark="{Binding ChatWatermark}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                    <TextBox Text="{Binding ChatResult}" IsReadOnly="True" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource CardSubText}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" Height="150"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Completion -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding CompletionLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                        <Button Command="{Binding TestCompletionCommand}" Content="{Binding TestBtn}" Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding CompletionPrompt}" Watermark="{Binding CompletionWatermark}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                    <TextBox Text="{Binding CompletionResult}" IsReadOnly="True" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource CardSubText}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" Height="150"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Custom Request -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{Binding CustomLabel}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                    <Grid ColumnDefinitions="120,12,*" RowDefinitions="Auto,8,Auto,8,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding MethodLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding CustomMethod}"
+                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8">
+                            <ComboBoxItem Content="GET"/>
+                            <ComboBoxItem Content="POST"/>
+                            <ComboBoxItem Content="PUT"/>
+                            <ComboBoxItem Content="DELETE"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding PathLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding CustomPath}" Watermark="{Binding PathWatermark}"
+                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{Binding BodyLabel}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding CustomBody}" Watermark="{Binding BodyWatermark}"
+                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                 AcceptsReturn="True" Height="80" FontFamily="Consolas"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Command="{Binding TestCustomCommand}" Content="{Binding SendBtn}" Background="{DynamicResource BtnPurple}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                        <Button Command="{Binding RunAllTestsCommand}" Content="{Binding RunAllBtn}" Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}" Padding="16,6" CornerRadius="6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding CustomResult}" IsReadOnly="True" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource CardSubText}"
+                             BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" Height="120"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Status -->
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="{Binding LastError}" FontSize="12" Foreground="#F87171"
+                           IsVisible="{Binding LastError, Converter={StaticResource NotNullConverter}}"/>
+                <TextBlock Text="{Binding LastTestTime, StringFormat='Last test: {0:HH:mm:ss}'}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

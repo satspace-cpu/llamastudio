@@ -1,0 +1,992 @@
+     using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
+
+using Hermass.Core.Interfaces;
+using Hermass.Core.Models;
+using Hermass.Core.Enums;
+using Hermass.Infrastructure.Chat;
+using System.Collections.ObjectModel;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Timers;
+
+namespace Hermass.ViewModels;
+
+public partial class ChatViewModel : ObservableObject
+{
+    readonly IChatService _chatService;
+    readonly IMcpToolsService _mcpToolsService;
+    readonly ChatSessionStore _sessionStore;
+    readonly ISettings _settings;
+    readonly ILogService _log;
+    readonly ILocalizationService _loc;
+    readonly IServerManager _serverManager;
+    readonly IFilePickerService _filePicker;
+    readonly IDialogService _dialog;
+
+    [ObservableProperty] ObservableCollection<ChatSession> _sessions = new();
+    [ObservableProperty] ChatSession? _selectedSession;
+    [ObservableProperty] ObservableCollection<ChatMessage> _messages = new();
+    [ObservableProperty] string _inputText = "";
+    [ObservableProperty] bool _isGenerating = false;
+    [ObservableProperty] bool _showSettings = false;
+    [ObservableProperty] bool _mcpToolsEnabled = false;
+
+    partial void OnMcpToolsEnabledChanged(bool value)
+    {
+        _log.Information($"[CHAT] McpToolsEnabled changed to {value}", "ChatVM");
+        if (SelectedSession != null)
+            _ = SaveCurrentSessionAsync();
+    }
+    [ObservableProperty] bool _showMcpServers = false;
+
+    // MCP server management
+    [ObservableProperty] ObservableCollection<McpServerConfig> _mcpServers = new();
+    [ObservableProperty] string _newServerName = "";
+    [ObservableProperty] string _newServerCommand = "";
+    [ObservableProperty] string _newServerArgs = "";
+    [ObservableProperty] string _newServerUrl = "http://127.0.0.1:8080";
+    [ObservableProperty] McpTransportType _selectedTransportType = McpTransportType.Stdio;
+    public List<McpTransportType> TransportTypes { get; } = Enum.GetValues<McpTransportType>().ToList();
+
+    // Attached files for current message
+    [ObservableProperty] List<string> _attachedFilesPreview = new();
+    [ObservableProperty] ObservableCollection<string> _attachedImageBase64 = new();
+
+    // Session rename inline editing
+    private ChatSession? _renamingSession;
+    public ChatSession? RenamingSession
+    {
+        get => _renamingSession;
+        set
+        {
+            if (_renamingSession != value)
+            {
+                _renamingSession = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsRenaming));
+            }
+        }
+    }
+
+    [ObservableProperty] string _renameText = "";
+
+    public bool IsRenaming => RenamingSession != null;
+
+    // Server connection status
+    [ObservableProperty] ServerState _serverState = ServerState.Stopped;
+    [ObservableProperty] string _serverModelName = "";
+
+ 
+
+    // Generation parameters
+    [ObservableProperty] float _temperature = 0.8f;
+    [ObservableProperty] float _topP = 0.95f;
+    [ObservableProperty] int _topK = 40;
+    [ObservableProperty] float _minP = 0.05f;
+    [ObservableProperty] float _repeatPenalty = 1.0f;
+    [ObservableProperty] float _presencePenalty = 0.0f;
+    [ObservableProperty] float _frequencyPenalty = 0.0f;
+    [ObservableProperty] int _seed = -1;
+    [ObservableProperty] int _maxTokens = -1;
+    [ObservableProperty] string _stopSequences = "";
+    [ObservableProperty] string _systemPrompt = "";
+
+    // Connection
+    [ObservableProperty] string _host = "localhost";
+    [ObservableProperty] int _port = 8080;
+
+      CancellationTokenSource? _cancellationTokenSource;
+    System.Timers.Timer? _streamTimer;
+    System.Timers.Timer? _healthCheckTimer;
+
+    public string Title => _loc.T("chat.title");
+    public string NewSessionBtn => _loc.T("chat.new_session");
+    public string DeleteSessionBtn => _loc.T("chat.delete_session");
+    public string RenameSessionBtn => _loc.T("chat.rename_session");
+    public string DuplicateSessionBtn => _loc.T("chat.duplicate_session");
+    public string ExportSessionBtn => _loc.T("chat.export_session");
+    public string ClearSessionBtn => _loc.T("chat.clear_session");
+    public string DeleteSessionCtxBtn => _loc.T("chat.delete_session_ctx");
+    public string SendBtn => _loc.T("chat.send");
+    public string StopBtn => _loc.T("chat.stop");
+    public string InputWatermark => _loc.T("chat.input_watermark");
+    public string SettingsLabel => _loc.T("chat.settings");
+    public string McpToolsLabel => _loc.T("chat.mcp_tools");
+    public string McpServersLabel => _loc.T("chat.mcp_servers");
+    public string McpServersTitle => _loc.T("chat.mcp_servers_title");
+    public string SystemPromptLabel => _loc.T("chat.system_prompt");
+    public string SystemPromptWatermark => _loc.T("chat.system_prompt_watermark");
+    public string ParamsLabel => _loc.T("chat.params");
+    public string SessionsLabel => _loc.T("chat.sessions");
+    public string NoSessionLabel => _loc.T("chat.no_session");
+    public string CopyBtn => _loc.T("chat.copy");
+    public string EditMessageBtn => _loc.T("chat.edit_message");
+    public string RegenerateBtn => _loc.T("chat.regenerate");
+    public string BookmarkBtn => _loc.T("chat.bookmark");
+    public string UnbookmarkBtn => _loc.T("chat.unbookmark");
+    public string DeleteMessageBtn => _loc.T("chat.delete_message");
+    public string ReasoningHeader => _loc.T("chat.reasoning");
+    public string NoServerLabel => _loc.T("chat.no_server");
+    public string ServerConnected => _loc.T("chat.server_connected");
+    public string ServerDisconnected => _loc.T("chat.server_disconnected");
+
+    public ChatViewModel(
+        IChatService chatService,
+        IMcpToolsService mcpToolsService,
+        ChatSessionStore sessionStore,
+        ISettings settings,
+        ILogService log,
+        ILocalizationService loc,
+        IServerManager serverManager,
+        IFilePickerService filePicker,
+        IDialogService dialog)
+    {
+        _chatService = chatService;
+        _mcpToolsService = mcpToolsService;
+        _sessionStore = sessionStore;
+        _settings = settings;
+        _log = log;
+        _loc = loc;
+        _serverManager = serverManager;
+        _filePicker = filePicker;
+        _dialog = dialog;
+
+        var host = settings.DefaultHost ?? "localhost";
+        // Normalize wildcard bind addresses to localhost for client connections
+        if (host == "0.0.0.0" || host == "::")
+            host = "127.0.0.1";
+        Host = host;
+        Port = settings.DefaultPort != 0 ? settings.DefaultPort : 8080;
+
+        _loc.OnLanguageChanged += (_, _) => UpdateLocalizedProperties();
+        _serverManager.StatusChanged += OnServerStatusChanged;
+        _ = LoadSessionsAsync();
+        _ = LoadMcpServersAsync();
+        StartHealthCheck();
+    }
+
+    void OnServerStatusChanged(object? sender, ServerStatus e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            ServerState = e.State;
+            ServerModelName = e.ModelName ?? "";
+            OnPropertyChanged(nameof(ServerConnected));
+            OnPropertyChanged(nameof(ServerDisconnected));
+        });
+    }
+
+    void StartHealthCheck()
+    {
+        _healthCheckTimer = new System.Timers.Timer(3000) { AutoReset = true };
+        _healthCheckTimer.Elapsed += async (_, _) =>
+        {
+            try
+            {
+                var status = await _serverManager.HealthCheckAsync(Host, Port);
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (status != null)
+                    {
+                        ServerState = ServerState.Running;
+                        ServerModelName = status.ModelName ?? "";
+                    }
+                    else
+                    {
+                        ServerState = ServerState.Stopped;
+                        ServerModelName = "";
+                    }
+                    OnPropertyChanged(nameof(ServerConnected));
+                    OnPropertyChanged(nameof(ServerDisconnected));
+                });
+            }
+            catch
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ServerState = ServerState.Stopped;
+                    OnPropertyChanged(nameof(ServerConnected));
+                    OnPropertyChanged(nameof(ServerDisconnected));
+                });
+            }
+        };
+        _healthCheckTimer.Start();
+    }
+
+    async Task LoadSessionsAsync()
+    {
+        try
+        {
+            var sessions = await _sessionStore.LoadAllAsync();
+            Sessions = new ObservableCollection<ChatSession>(sessions);
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, "Failed to load chat sessions", "ChatViewModel");
+        }
+    }
+
+    void UpdateLocalizedProperties()
+    {
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(NewSessionBtn));
+        OnPropertyChanged(nameof(DeleteSessionBtn));
+        OnPropertyChanged(nameof(RenameSessionBtn));
+        OnPropertyChanged(nameof(DuplicateSessionBtn));
+        OnPropertyChanged(nameof(ExportSessionBtn));
+        OnPropertyChanged(nameof(ClearSessionBtn));
+        OnPropertyChanged(nameof(DeleteSessionCtxBtn));
+        OnPropertyChanged(nameof(SendBtn));
+        OnPropertyChanged(nameof(StopBtn));
+        OnPropertyChanged(nameof(InputWatermark));
+        OnPropertyChanged(nameof(SettingsLabel));
+        OnPropertyChanged(nameof(McpToolsLabel));
+        OnPropertyChanged(nameof(SystemPromptLabel));
+        OnPropertyChanged(nameof(SystemPromptWatermark));
+        OnPropertyChanged(nameof(ParamsLabel));
+        OnPropertyChanged(nameof(SessionsLabel));
+     OnPropertyChanged(nameof(NoSessionLabel));
+            OnPropertyChanged(nameof(NoServerLabel));
+            OnPropertyChanged(nameof(CopyBtn));
+            OnPropertyChanged(nameof(ServerConnected));
+            OnPropertyChanged(nameof(ServerDisconnected));
+    }
+
+    partial void OnSelectedSessionChanged(ChatSession? value)
+    {
+        if (value == null)
+        {
+            Messages = new ObservableCollection<ChatMessage>();
+            SystemPrompt = "";
+            McpToolsEnabled = false;
+            Temperature = 0.8f;
+            TopP = 0.95f;
+            TopK = 40;
+            MinP = 0.05f;
+            RepeatPenalty = 1.0f;
+            PresencePenalty = 0.0f;
+            FrequencyPenalty = 0.0f;
+            Seed = -1;
+            MaxTokens = -1;
+            StopSequences = "";
+            return;
+        }
+
+        Messages = new ObservableCollection<ChatMessage>(value.Messages);
+        SystemPrompt = value.SystemPrompt;
+        McpToolsEnabled = value.McpToolsEnabled;
+        Temperature = value.Temperature;
+        TopP = value.TopP;
+        TopK = value.TopK;
+        MinP = value.MinP;
+        RepeatPenalty = value.RepeatPenalty;
+        PresencePenalty = value.PresencePenalty;
+        FrequencyPenalty = value.FrequencyPenalty;
+        Seed = value.Seed;
+        MaxTokens = value.MaxTokens;
+        StopSequences = string.Join(", ", value.StopSequences);
+    }
+
+    [RelayCommand]
+    async Task NewSession()
+    {
+        var session = new ChatSession
+        {
+            Name = "New Chat",
+            SystemPrompt = SystemPrompt,
+            McpToolsEnabled = McpToolsEnabled,
+            Temperature = Temperature,
+            TopP = TopP,
+            TopK = TopK,
+            MinP = MinP,
+            RepeatPenalty = RepeatPenalty,
+            PresencePenalty = PresencePenalty,
+            FrequencyPenalty = FrequencyPenalty,
+            Seed = Seed,
+            MaxTokens = MaxTokens,
+            StopSequences = ParseStopSequences()
+        };
+
+        await _sessionStore.SaveSessionAsync(session);
+        await LoadSessionsAsync();
+        SelectedSession = session;
+    }
+
+    [RelayCommand]
+    async Task DeleteSession(ChatSession? session = null)
+    {
+        session ??= SelectedSession;
+        if (session == null)
+            return;
+
+        if (session == SelectedSession)
+            SelectedSession = null;
+
+        await _sessionStore.DeleteSessionAsync(session.Id);
+        await LoadSessionsAsync();
+    }
+
+    [RelayCommand]
+    async Task DuplicateSession(ChatSession session)
+    {
+        var dup = new ChatSession
+        {
+            Name = $"{session.Name} (copy)",
+            SystemPrompt = session.SystemPrompt,
+            McpToolsEnabled = session.McpToolsEnabled,
+            Temperature = session.Temperature,
+            TopP = session.TopP,
+            TopK = session.TopK,
+            MinP = session.MinP,
+            RepeatPenalty = session.RepeatPenalty,
+            PresencePenalty = session.PresencePenalty,
+            FrequencyPenalty = session.FrequencyPenalty,
+            Seed = session.Seed,
+            MaxTokens = session.MaxTokens,
+            StopSequences = session.StopSequences
+        };
+
+        foreach (var msg in session.Messages)
+            dup.AddMessage(new ChatMessage
+            {
+                Role = msg.Role,
+                Content = msg.Content
+            });
+
+        await _sessionStore.SaveSessionAsync(dup);
+        await LoadSessionsAsync();
+        SelectedSession = dup;
+    }
+
+    [RelayCommand]
+    async Task ClearSessionMessages(ChatSession session)
+    {
+        session.Messages.Clear();
+        if (session == SelectedSession)
+            Messages = new ObservableCollection<ChatMessage>();
+        await _sessionStore.SaveSessionAsync(session);
+    }
+
+    [RelayCommand]
+    async Task ExportSessionCtx(ChatSession session)
+    {
+        var prev = SelectedSession;
+        SelectedSession = session;
+
+        var text = $"# {session.Name}\n\n";
+        foreach (var msg in session.Messages)
+        {
+            text += $"**{msg.RoleName}:**\n{msg.Content}\n\n";
+        }
+
+        var suggestedName = $"chat_{session.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.md";
+        var path = await _filePicker.SaveFileAsync(suggestedName, ".md");
+        if (path != null)
+        {
+            await File.WriteAllTextAsync(path, text);
+        }
+
+        SelectedSession = prev;
+    }
+
+    [RelayCommand]
+    void StartRenameSession(ChatSession? session)
+    {
+        if (session == null)
+            session = SelectedSession;
+        if (session == null)
+            return;
+
+        RenamingSession = session;
+        RenameText = session.Name;
+    }
+
+    [RelayCommand]
+    async Task CommitRenameSession()
+    {
+        if (RenamingSession == null)
+            return;
+
+        var newName = RenameText.Trim();
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            RenamingSession.Name = newName;
+            await _sessionStore.SaveSessionAsync(RenamingSession);
+        }
+
+        RenamingSession = null;
+        RenameText = "";
+    }
+
+    [RelayCommand]
+    async Task ReorderSessions()
+    {
+        await _sessionStore.ReorderSessionsAsync(Sessions.ToList());
+    }
+
+    [RelayCommand]
+    void CancelRenameSession()
+    {
+        RenamingSession = null;
+        RenameText = "";
+    }
+
+    [RelayCommand]
+    void ToggleSettings()
+    {
+        ShowSettings = !ShowSettings;
+    }
+
+    [RelayCommand]
+    void ToggleMcpTools()
+    {
+        McpToolsEnabled = !McpToolsEnabled;
+        if (SelectedSession != null)
+            _ = SaveCurrentSessionAsync();
+    }
+
+ [RelayCommand]
+    void ToggleMcpServers()
+    {
+        ShowMcpServers = !ShowMcpServers;
+    }
+
+    partial void OnSystemPromptChanged(string value)
+    {
+        _ = SaveCurrentSessionAsync();
+    }
+
+    [RelayCommand]
+    async Task SendMessageAsync()
+    {
+        _log.Information($"[CHAT] SendMessageAsync START, IsGenerating={IsGenerating}, InputText='{InputText?.Trim()}'", "Chat");
+
+        if ((string.IsNullOrWhiteSpace(InputText) && AttachedImageBase64.Count == 0) || IsGenerating)
+        {
+            _log.Information($"[CHAT] ABORT: InputText empty or IsGenerating", "Chat");
+            return;
+        }
+
+        if (SelectedSession == null)
+        {
+            _log.Information("[CHAT] No session, creating new", "Chat");
+            await NewSession();
+            if (SelectedSession == null)
+            {
+                _log.Warning("[CHAT] Failed to create session", "Chat");
+                return;
+            }
+        }
+
+        var userMessage = InputText.Trim();
+        var imageAttachments = AttachedImageBase64.ToList();
+        var attachedFiles = AttachedFilesPreview.ToList();
+        InputText = "";
+        AttachedImageBase64.Clear();
+        AttachedFilesPreview = new List<string>();
+
+        var userMsg = new ChatMessage
+        {
+            Role = ChatRole.User,
+            Content = userMessage,
+            ImageAttachments = imageAttachments,
+            AttachedFiles = attachedFiles
+        };
+
+        SelectedSession.AddMessage(userMsg);
+        Messages.Add(userMsg);
+
+        await _sessionStore.SaveSessionAsync(SelectedSession);
+
+        var assistantContent = new StringBuilder();
+        var reasoningBuffer = new StringBuilder();
+        var contentLock = new object();
+
+        var assistantMsg = new ChatMessage
+        {
+            Role = ChatRole.Assistant,
+            Content = "",
+            IsStreaming = true
+        };
+        Messages.Add(assistantMsg);
+
+        IsGenerating = true;
+        _cancellationTokenSource = new CancellationTokenSource();
+
+        _streamTimer = new System.Timers.Timer(80) { AutoReset = true };
+        _streamTimer.Elapsed += (_, _) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                string contentSnapshot, reasoningSnapshot;
+                lock (contentLock)
+                {
+                    contentSnapshot = assistantContent.ToString();
+                    reasoningSnapshot = reasoningBuffer.ToString();
+                }
+                
+                // If we have explicit reasoning from SSE, use it directly
+                string finalReasoning;
+                if (!string.IsNullOrEmpty(reasoningSnapshot))
+                {
+                    finalReasoning = reasoningSnapshot;
+                }
+                else
+                {
+                    // Fallback: extract <think> tags from content
+                    var (tagReasoning, cleanContent) = ExtractReasoning(contentSnapshot);
+                    assistantMsg.Content = cleanContent;
+                    finalReasoning = tagReasoning;
+                }
+                
+                if (!string.IsNullOrEmpty(reasoningSnapshot))
+                {
+                    // When using SSE reasoning_content, content is already clean
+                    assistantMsg.Content = contentSnapshot;
+                }
+                
+                if (assistantMsg.Content != contentSnapshot || finalReasoning != assistantMsg.Reasoning)
+                {
+                    assistantMsg.Reasoning = string.IsNullOrEmpty(finalReasoning) ? null : finalReasoning;
+                    OnPropertyChanged(nameof(Messages));
+                }
+            });
+        };
+        _streamTimer.Start();
+
+        try
+        {
+            _log.Information($"[CHAT] Calling server: http://{Host}:{Port}, MCP={McpToolsEnabled}", "Chat");
+
+            if (McpToolsEnabled)
+            {
+                _log.Information("[CHAT] Using SendChatWithToolsAsync", "Chat");
+                await _chatService.SendChatWithToolsAsync(
+                    Host, Port,
+                    SelectedSession.SystemPrompt,
+                    SelectedSession.Messages.ToList(),
+                    userMessage,
+                    imageAttachments,
+                    _mcpToolsService,
+                    Temperature, TopP, TopK, MinP,
+                    RepeatPenalty, PresencePenalty, FrequencyPenalty,
+                    Seed, MaxTokens, ParseStopSequences(),
+                    onToken: (token) =>
+                    {
+                        lock (contentLock)
+                        {
+                            assistantContent.Append(token);
+                        }
+                    },
+                    onMessage: (msg) =>
+                    {
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            Messages.Add(msg);
+                        });
+                    },
+                    _cancellationTokenSource.Token);
+            }
+            else
+            {
+                _log.Information("[CHAT] Using SendChatAsync", "Chat");
+                await _chatService.SendChatAsync(
+                    Host, Port,
+                    SelectedSession.SystemPrompt,
+                    SelectedSession.Messages.ToList(),
+                    userMessage,
+                    imageAttachments,
+                    false, null,
+                    Temperature, TopP, TopK, MinP,
+                    RepeatPenalty, PresencePenalty, FrequencyPenalty,
+                    Seed, MaxTokens, ParseStopSequences(),
+                    onToken: (token) =>
+                    {
+                        lock (contentLock)
+                        {
+                            assistantContent.Append(token);
+                        }
+                    },
+                    onToolCall: _ => { },
+                    onReasoning: (reasoningToken) =>
+                    {
+                        lock (contentLock)
+                        {
+                            reasoningBuffer.Append(reasoningToken);
+                        }
+                    },
+                    _cancellationTokenSource.Token);
+            }
+
+            string finalRawContent, finalReasoningSse;
+            lock (contentLock)
+            {
+                finalRawContent = assistantContent.ToString();
+                finalReasoningSse = reasoningBuffer.ToString();
+            }
+            _log.Information($"[CHAT] Response received, content length={finalRawContent.Length}, reasoning length={reasoningBuffer.Length}", "Chat");
+
+            // Extract reasoning: prefer SSE reasoning_content, fallback to <think> tags
+            string? finalReasoning;
+            string cleanContent;
+            if (!string.IsNullOrEmpty(finalReasoningSse))
+            {
+                finalReasoning = finalReasoningSse;
+                cleanContent = finalRawContent;
+            }
+            else
+            {
+                var (tagReasoning, extractedContent) = ExtractReasoning(finalRawContent);
+                finalReasoning = tagReasoning;
+                cleanContent = extractedContent;
+            }
+            assistantMsg.Content = cleanContent;
+            assistantMsg.Reasoning = string.IsNullOrEmpty(finalReasoning) ? null : finalReasoning;
+            assistantMsg.IsStreaming = false;
+
+            // Force final UI update without replacing collection
+            OnPropertyChanged(nameof(Messages));
+
+            if (!string.IsNullOrWhiteSpace(cleanContent) || !string.IsNullOrWhiteSpace(finalReasoning))
+            {
+                SelectedSession.AddMessage(new ChatMessage
+                {
+                    Role = ChatRole.Assistant,
+                    Content = cleanContent,
+                    Reasoning = string.IsNullOrEmpty(finalReasoning) ? null : finalReasoning
+                });
+            }
+
+            await _sessionStore.SaveSessionAsync(SelectedSession);
+        }
+        catch (OperationCanceledException)
+        {
+            _log.Information("[CHAT] Generation canceled", "Chat");
+            string canceledContent;
+            lock (contentLock)
+            {
+                canceledContent = assistantContent.ToString();
+            }
+            assistantMsg.Content = canceledContent;
+            assistantMsg.IsStreaming = false;
+            OnPropertyChanged(nameof(Messages));
+
+            if (!string.IsNullOrWhiteSpace(canceledContent))
+            {
+                SelectedSession.AddMessage(new ChatMessage
+                {
+                    Role = ChatRole.Assistant,
+                    Content = canceledContent
+                });
+                await _sessionStore.SaveSessionAsync(SelectedSession);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, $"[CHAT] ERROR: {ex.Message}", "Chat");
+            assistantMsg.IsStreaming = false;
+            Messages.Remove(assistantMsg);
+            Messages.Add(new ChatMessage
+            {
+                Role = ChatRole.Assistant,
+                Content = $"Error: {ex.Message}"
+            });
+            OnPropertyChanged(nameof(Messages));
+        }
+        finally
+        {
+            IsGenerating = false;
+            _cancellationTokenSource = null;
+            _streamTimer?.Stop();
+            _streamTimer?.Dispose();
+            _streamTimer = null;
+            _log.Information("[CHAT] SendMessageAsync FINISHED", "Chat");
+        }
+    }
+
+    public void NotifyImagesChanged()
+    {
+        OnPropertyChanged(nameof(AttachedImageBase64));
+    }
+
+    [RelayCommand]
+    void RemoveImage(string base64)
+    {
+        if (AttachedImageBase64.Remove(base64))
+            OnPropertyChanged(nameof(AttachedImageBase64));
+    }
+
+    /// <summary>Extracts reasoning from <think> tags, returns (reasoning, cleanContent)</summary>
+    static (string? Reasoning, string Content) ExtractReasoning(string raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return (null, string.Empty);
+
+        const string openTag = "<think>";
+        const string closeTag = "</think>";
+
+        var firstOpen = raw.IndexOf(openTag, StringComparison.OrdinalIgnoreCase);
+        if (firstOpen < 0)
+            return (null, raw); // No reasoning tags found
+
+        var firstClose = raw.IndexOf(closeTag, firstOpen + openTag.Length, StringComparison.OrdinalIgnoreCase);
+        if (firstClose < 0)
+        {
+            // Tag not closed yet (still streaming) — treat everything after open tag as reasoning
+            var prefixPart = raw[..firstOpen].Trim();
+            var reasoningPart = raw[(firstOpen + openTag.Length)..].Trim();
+            return (string.IsNullOrEmpty(reasoningPart) ? null : reasoningPart, prefixPart);
+        }
+
+        // Extract reasoning content between tags
+        var reasoningText = raw[(firstOpen + openTag.Length)..firstClose].Trim();
+        // Combine content before and after the reasoning tags
+        var prefixContent = raw[..firstOpen].Trim();
+        var suffixContent = raw[(firstClose + closeTag.Length)..].Trim();
+        var cleanContent = string.Join("\n", new[] { prefixContent, suffixContent }.Where(s => !string.IsNullOrEmpty(s))).Trim();
+
+        return (string.IsNullOrEmpty(reasoningText) ? null : reasoningText, cleanContent);
+    }
+
+    [RelayCommand]
+    async Task CopyMessage(ChatMessage message)
+    {
+        try
+        {
+            var top = Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+            var window = top?.MainWindow;
+            if (window != null)
+            {
+                var clipboard = window.Clipboard;
+                if (clipboard != null)
+                    await clipboard.SetTextAsync(message.Content);
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    void ToggleBookmark(ChatMessage message)
+    {
+        message.IsBookmarked = !message.IsBookmarked;
+        _log.Information($"[CHAT] Bookmark {(message.IsBookmarked ? "added" : "removed")} for message {message.Id}", "Chat");
+    }
+
+    [RelayCommand]
+    void DeleteMessage(ChatMessage message)
+    {
+        if (SelectedSession == null) return;
+        SelectedSession.Messages.Remove(message);
+        Messages.Remove(message);
+        _ = _sessionStore.SaveSessionAsync(SelectedSession);
+        _log.Information($"[CHAT] Deleted message {message.Id}", "Chat");
+    }
+
+    [RelayCommand]
+    async Task RegenerateMessage(ChatMessage message)
+    {
+        if (SelectedSession == null || ServerState != Core.Enums.ServerState.Running) return;
+
+        var idx = SelectedSession.Messages.IndexOf(message);
+        if (idx < 0 || idx == 0) return;
+
+        // Find the user message before this assistant response
+        var userMsg = SelectedSession.Messages[idx - 1];
+        if (userMsg.Role != Core.Models.ChatRole.User) return;
+
+        // Remove this assistant message and everything after it from session
+        for (int i = SelectedSession.Messages.Count - 1; i >= idx; i--)
+            SelectedSession.Messages.RemoveAt(i);
+
+        // Also remove from Messages display collection
+        while (Messages.Count > SelectedSession.Messages.Count)
+            Messages.RemoveAt(Messages.Count - 1);
+
+        _ = _sessionStore.SaveSessionAsync(SelectedSession);
+
+        // Re-send the user message to trigger regeneration
+        InputText = "";
+        AttachedImageBase64.Clear();
+        foreach (var img in userMsg.ImageAttachments)
+            AttachedImageBase64.Add(img);
+        await SendMessageAsync(userMsg.Content, userMsg.ImageAttachments);
+    }
+
+    async Task SendMessageAsync(string text, List<string> images)
+    {
+        InputText = "";
+        AttachedImageBase64.Clear();
+        foreach (var img in images)
+            AttachedImageBase64.Add(img);
+        await SendMessageAsync();
+    }
+
+    [RelayCommand]
+    async Task EditMessage(ChatMessage message)
+    {
+        if (message.Role != Core.Models.ChatRole.User || SelectedSession == null) return;
+
+        string? newText = await _dialog.ShowInputAsync(
+            _loc.T("chat.edit_message"),
+            _loc.T("chat.input_watermark"),
+            message.Content);
+
+        if (!string.IsNullOrWhiteSpace(newText) && newText != message.Content)
+        {
+            var idx = SelectedSession.Messages.IndexOf(message);
+            // Remove this user message and everything after it (assistant reply, etc.)
+            for (int i = SelectedSession.Messages.Count - 1; i >= idx; i--)
+                SelectedSession.Messages.RemoveAt(i);
+
+            // Also remove from Messages display collection
+            while (Messages.Count > SelectedSession.Messages.Count)
+                Messages.RemoveAt(Messages.Count - 1);
+
+            _ = _sessionStore.SaveSessionAsync(SelectedSession);
+
+            // Re-send with new text
+            InputText = newText;
+            AttachedImageBase64.Clear();
+            foreach (var img in message.ImageAttachments)
+                AttachedImageBase64.Add(img);
+            await SendMessageAsync();
+        }
+    }
+
+    [RelayCommand]
+    void StopGeneration()
+    {
+        _cancellationTokenSource?.Cancel();
+    }
+
+    [RelayCommand]
+    async Task ClearSession()
+    {
+        if (SelectedSession == null)
+            return;
+
+        SelectedSession.Messages.Clear();
+        Messages = new ObservableCollection<ChatMessage>();
+        await _sessionStore.SaveSessionAsync(SelectedSession);
+    }
+
+    [RelayCommand]
+    async Task ExportSession()
+    {
+        if (SelectedSession == null)
+            return;
+
+        var text = $"# {SelectedSession.Name}\n\n";
+        foreach (var msg in SelectedSession.Messages)
+        {
+            text += $"**{msg.RoleName}:**\n{msg.Content}\n\n";
+        }
+
+        var suggestedName = $"chat_{SelectedSession.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.md";
+        var path = await _filePicker.SaveFileAsync(suggestedName, ".md");
+        if (path != null)
+        {
+            await File.WriteAllTextAsync(path, text);
+        }
+    }
+
+    async Task SaveCurrentSessionAsync()
+    {
+        if (SelectedSession == null)
+            return;
+
+        SelectedSession.SystemPrompt = SystemPrompt;
+        SelectedSession.McpToolsEnabled = McpToolsEnabled;
+        SelectedSession.Temperature = Temperature;
+        SelectedSession.TopP = TopP;
+        SelectedSession.TopK = TopK;
+        SelectedSession.MinP = MinP;
+        SelectedSession.RepeatPenalty = RepeatPenalty;
+        SelectedSession.PresencePenalty = PresencePenalty;
+        SelectedSession.FrequencyPenalty = FrequencyPenalty;
+        SelectedSession.Seed = Seed;
+        SelectedSession.MaxTokens = MaxTokens;
+        SelectedSession.StopSequences = ParseStopSequences();
+
+        try
+        {
+            await _sessionStore.SaveSessionAsync(SelectedSession);
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, "Failed to save session", "ChatViewModel");
+        }
+    }
+
+    List<string> ParseStopSequences()
+    {
+        if (string.IsNullOrWhiteSpace(StopSequences))
+            return new List<string>();
+
+        return StopSequences.Split(',', ';')
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToList();
+    }
+
+    async Task LoadMcpServersAsync()
+    {
+        try
+        {
+            var servers = _mcpToolsService.GetMcpServers();
+            McpServers = new ObservableCollection<McpServerConfig>(servers);
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, "Failed to load MCP servers", "ChatViewModel");
+        }
+    }
+
+    [RelayCommand]
+    async Task AddMcpServer()
+    {
+        var name = NewServerName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+
+        var config = new McpServerConfig
+        {
+            Name = name,
+            TransportType = SelectedTransportType
+        };
+
+        if (SelectedTransportType == McpTransportType.Stdio)
+        {
+            config.Command = NewServerCommand.Trim();
+            if (string.IsNullOrWhiteSpace(config.Command))
+                return;
+            var args = NewServerArgs.Trim();
+            if (!string.IsNullOrWhiteSpace(args))
+                config.Args = args.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        }
+        else
+        {
+            config.Url = NewServerUrl.Trim();
+            if (string.IsNullOrWhiteSpace(config.Url))
+                return;
+        }
+
+        await _mcpToolsService.AddMcpServerAsync(config);
+        await LoadMcpServersAsync();
+
+        NewServerName = "";
+        NewServerCommand = "";
+        NewServerArgs = "";
+        NewServerUrl = "http://127.0.0.1:8080";
+    }
+
+    [RelayCommand]
+    async Task RemoveMcpServer(string id)
+    {
+        await _mcpToolsService.RemoveMcpServerAsync(id);
+        await LoadMcpServersAsync();
+    }
+}

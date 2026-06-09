@@ -1,0 +1,742 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:controls="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="LlamaStudio.Views.Pages.ServerPage"
+             x:DataType="vm:ServerViewModel">
+    <DockPanel>
+        <!-- Server State Banner - always visible at top -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ServerBannerBackground}" CornerRadius="12" Padding="16,12" Margin="20,20,20,0"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <TextBlock Text="{Binding StateLabel}" FontSize="13" Foreground="{DynamicResource ServerBannerLabel}"/>
+                    <TextBlock Text="{Binding State}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                    <TextBlock Text="{Binding ProcessId}" FontSize="12" Foreground="{DynamicResource SectionLabelLight}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="24">
+                    <TextBlock Text="{Binding Uptime, StringFormat='Uptime: {0:hh\:mm\:ss}'}" FontSize="11" Foreground="{DynamicResource ServerBannerSub}"/>
+                    <TextBlock Text="{Binding GpuVramUsedGb, StringFormat='VRAM: {0:F1} GB'}" FontSize="11" Foreground="#3B82F6"/>
+                    <TextBlock Text="{Binding RamUsedText, StringFormat='RAM: {0}'}" FontSize="11" Foreground="#10B981"/>
+                    <TextBlock Text="{Binding TokensPerSecond, StringFormat='Токенов/сек: {0:F1}'}" FontSize="11" Foreground="#FBBF24"/>
+                    <TextBlock Text="{Binding PromptTokensPerSecond, StringFormat='Промпт ток/с: {0:F1}'}" FontSize="11" Foreground="#8B5CF6"/>
+                    <Button Command="{Binding HealthCheckCommand}" Content="{Binding HealthCheckBtn}" Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="10,4" CornerRadius="6"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#F87171" FontWeight="SemiBold"
+                           IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullConverter}}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Profile & Command Line Section — visible above tabs -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="16,12" Margin="20,8,20,0" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+            <StackPanel Spacing="8">
+                <!-- Profile row -->
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ProfileLabel}" FontSize="13" FontWeight="SemiBold" Foreground="#818CF8" VerticalAlignment="Center"/>
+                <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                            DisplayMemberBinding="{Binding Name}" MinWidth="200" MaxWidth="350"
+                           Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="8,6" CornerRadius="6"/>
+                    <Button Command="{Binding CreateNewProfileCommand}" Content="{Binding CreateProfileBtn}"
+                            Background="#059669" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" MinWidth="100" CornerRadius="6"/>
+
+                    <Button Command="{Binding CopyFromProfileCommand}" Content="{Binding CopyFromProfileBtn}"
+                            Background="#7C3AED" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" MinWidth="100" CornerRadius="6"/>
+                    <Button Command="{Binding RenameProfileCommand}" Content="{Binding RenameProfileBtn}"
+                            Background="#0891B2" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" MinWidth="100" CornerRadius="6"/>
+                    <Button Command="{Binding DeleteProfileCommand}" Content="{Binding DeleteProfileBtn}"
+                            Background="#DC2626" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" MinWidth="100" CornerRadius="6"/>
+                </StackPanel>
+                <!-- Command line preview (editable) -->
+                <TextBox Text="{Binding CommandLinePreview, Mode=TwoWay}"
+                         Background="{DynamicResource ThemeCard}" Foreground="#A5B4FC" BorderBrush="{DynamicResource ThemeBorder}" Padding="8,6" CornerRadius="6"
+                         FontFamily="Consolas" FontSize="11"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="24" MaxHeight="200"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Tabs — plain text style matching profile section -->
+        <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" Margin="20,12,20,20">
+            <TabControl Background="Transparent" BorderThickness="0">
+                <TabControl.Styles>
+                    <Style Selector="TabItem">
+                        <Setter Property="Background" Value="{DynamicResource TabItemBackground}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource TabItemText}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="14"/>
+                        <Setter Property="Padding" Value="16,10"/>
+                        <Setter Property="Margin" Value="0,0,8,0"/>
+                        <Setter Property="Template">
+                            <ControlTemplate>
+                                <Border Background="{TemplateBinding Background}"
+                                        CornerRadius="8"
+                                        Padding="{TemplateBinding Padding}"
+                                        Margin="{TemplateBinding Margin}">
+                                    <ContentPresenter Content="{TemplateBinding Header}"
+                                                      Foreground="{TemplateBinding Foreground}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter>
+                    </Style>
+                    <Style Selector="TabItem:selected">
+                        <Setter Property="Background" Value="{DynamicResource TabItemSelectedBackground}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource TabItemSelectedText}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                    </Style>
+                    <Style Selector="TabItem:pointerover">
+                        <Setter Property="Background" Value="{DynamicResource TabItemHoverBackground}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeTextPrimary}"/>
+                    </Style>
+                </TabControl.Styles>
+
+                <!-- TAB: Model -->
+                <TabItem Header="{Binding TabModel}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="10">
+                            <!-- llama.cpp Server Path Info -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="#6366F1" BorderThickness="1.5">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <TextBlock Text="🖥️" FontSize="18"/>
+                                        <TextBlock Text="{Binding ServerPathTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                         <TextBox Text="{Binding ServerDirectory}" IsReadOnly="True"
+                                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                                 MinWidth="400"/>
+                                        <Button Command="{Binding SelectLlamaCppDirectoryCommand}" Content="{Binding SelectLlamaDirBtn}"
+                                                Background="#6366F1" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="6"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ExecHint}"
+                                                FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <TextBlock Text="{Binding ExecutableFoundText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                        <Button Command="{Binding CheckLlamaCppVersionCommand}" Content="{Binding CheckVersionBtn}"
+                                                Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="10,4" CornerRadius="6"/>
+                                        <Button Command="{Binding ValidateCliCommand}" Content="{Binding ValidateCliBtn}"
+                                                Background="#475569" Foreground="{DynamicResource ThemeTextPrimary}" Padding="10,4" CornerRadius="6"
+                                                IsEnabled="{Binding ExecutableFound}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding LlamaVersionInfo}" FontSize="12" Foreground="#A5B4FC"/>
+                                    <TextBlock Text="{Binding CudaInfo}" FontSize="12" Foreground="#A5B4FC"/>
+
+                                    <!-- CLI Validation Result -->
+                                    <Border Background="#1E1B4B" CornerRadius="8" Padding="12" BorderBrush="#334155" BorderThickness="1"
+                                            IsVisible="{Binding ValidationReport, Converter={StaticResource NotNullConverter}}">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding ValidationSummary}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding ValidationSummaryForeground}"/>
+                                            <TextBlock Text="{Binding ValidationDetails}" FontSize="11" Foreground="#A5B4FC" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Main Model -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding MainModelLabel}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBox Text="{Binding ModelPath}" Watermark="{Binding ModelWatermark}"
+                                                  controls:ToolTip.Tip="{Binding TipModelPath}"
+                                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                                  MinWidth="400"/>
+                                        <Button Command="{Binding BrowseModelCommand}" Content="{Binding BrowseModelBtn}"
+                                                Background="#475569" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="6"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ModelDisplayName}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- mmproj (Vision) -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBlock Text="{Binding MmprojTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                        <Border Background="#059669" CornerRadius="6" Padding="6,2">
+                                            <TextBlock Text="{Binding OptionalBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBox Text="{Binding MmprojPath}" Watermark="{Binding MmprojWatermark}"
+                                                  controls:ToolTip.Tip="{Binding TipMmprojPath}"
+                                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                                  MinWidth="400"/>
+                                        <Button Command="{Binding BrowseMmprojCommand}" Content="{Binding BrowseMmprojBtn}"
+                                                Background="#475569" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="6"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding MmprojDisplayName}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Draft Model (Speculative) -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBlock Text="{Binding DraftTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                        <Border Background="#7C3AED" CornerRadius="6" Padding="6,2">
+                                            <TextBlock Text="{Binding AdvancedBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ToggleSwitch IsChecked="{Binding SpeculativeDecoding}"/>
+                                        <TextBlock Text="{Binding EnableSpeculative}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBox Text="{Binding DraftModelPath}" Watermark="{Binding DraftWatermark}"
+                                                  controls:ToolTip.Tip="{Binding TipDraftModelPath}"
+                                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                                  MinWidth="400"/>
+                                        <Button Command="{Binding BrowseDraftModelCommand}" Content="{Binding BrowseDraftBtn}"
+                                                Background="#475569" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="6"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding DraftDisplayName}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Quick Model Scan -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding QuickSelectTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Button Command="{Binding QuickScanModelsCommand}" Content="{Binding QuickScanBtn}"
+                                                Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" CornerRadius="6"/>
+                                        <TextBlock Text="{Binding IsScanningModels}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                    </StackPanel>
+                                    <ComboBox ItemsSource="{Binding ScannedModels}" SelectedItem="{Binding QuickSelectedModel}"
+                                              DisplayMemberBinding="{Binding FileName}" MinWidth="500"
+                                              Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Button Command="{Binding QuickSelectModelCommand}" Content="{Binding QuickSelectModelBtn}"
+                                                Background="#059669" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,6" CornerRadius="6"/>
+                                        <Button Command="{Binding QuickSelectMmprojCommand}" Content="{Binding QuickSelectMmprojBtn}"
+                                                Background="#059669" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,6" CornerRadius="6"/>
+                                        <Button Command="{Binding QuickSelectDraftCommand}" Content="{Binding QuickSelectDraftBtn}"
+                                                Background="#059669" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,6" CornerRadius="6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- HuggingFace Download -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="18" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding HfTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+
+                                    <!-- Download directory info -->
+                                    <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{Binding DownloadToLabel}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                            <TextBlock Text="{Binding HfDownloadDirectory}" FontSize="12" Foreground="#E5E7EB" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Recommended models list -->
+                                    <ItemsControl ItemsSource="{Binding RecommendedModels}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="12" Margin="0,0,0,6"
+                                                        BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                                    <StackPanel Spacing="6">
+                                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="#E5E7EB"/>
+                                                            <Border Background="#6366F1" CornerRadius="4" Padding="4,1">
+                                                                <TextBlock Text="{Binding Quantization}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding Size}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Params}" FontSize="11" Foreground="{DynamicResource SectionLabelLight}"/>
+                                                        <Button Command="{Binding $parent[UserControl].DataContext.SelectRecommendedModelCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="{Binding SelectThisModelBtn}" Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="10,4" CornerRadius="6"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                     <!-- Manual repo/file input -->
+                                     <TextBlock Text="{Binding OrManual}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                     <Grid ColumnDefinitions="280,*">
+                                         <TextBlock Grid.Column="0" Text="{Binding RepoLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                          <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding HfRepo}" Watermark="e.g. bartowski/Llama-4-Maverick-17B-128E-Instruct-Q4_K_M.gguf"
+                                                   controls:ToolTip.Tip="{Binding TipModelPath}"
+                                                   Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    </Grid>
+
+                                     <!-- Model info display -->
+                                     <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="12"
+                                             IsVisible="{Binding ModelDescription}">
+                                         <StackPanel Spacing="4">
+                                             <TextBlock Text="{Binding ModelDescription}" FontSize="13" Foreground="#E5E7EB"/>
+                                             <StackPanel Orientation="Horizontal" Spacing="16">
+                                                 <TextBlock Text="{Binding ModelSizeInfo}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                                 <TextBlock Text="{Binding ModelParamsInfo}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                             </StackPanel>
+                                         </StackPanel>
+                                     </Border>
+
+                                     <StackPanel Orientation="Horizontal" Spacing="8">
+                                         <ToggleSwitch IsChecked="{Binding HfOffline}"/>
+                                         <TextBlock Text="{Binding OfflineMode}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                     </StackPanel>
+
+                                     <!-- Download button + progress -->
+                                     <StackPanel Spacing="6">
+                                         <Button Command="{Binding DownloadHfModelCommand}"
+                                                 Content="{Binding DownloadModelBtn}"
+                                                 Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="8"
+                                                 IsEnabled="{Binding !IsDownloadingHf}"/>
+
+                                         <!-- Progress bar (visible during download) -->
+                                         <ProgressBar Value="{Binding HfDownloadProgress}" Maximum="100"
+                                                      IsVisible="{Binding IsDownloadingHf}"
+                                                      Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}" Height="8" CornerRadius="4"/>
+
+                                         <!-- Status text -->
+                                         <TextBlock Text="{Binding HfDownloadStatus}" FontSize="12" Foreground="#A5B4FC"
+                                                    IsVisible="{Binding HfDownloadStatus}"/>
+                                     </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- TAB: GPU -->
+                <TabItem Header="{Binding TabGpu}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="10">
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding GpuAcceleration}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+<Grid ColumnDefinitions="280,*">
+                                         <TextBlock Grid.Column="0" Text="{Binding GpuLayersLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                       <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding GpuLayers}"
+                                                         Watermark="Число, 'all' или 'auto'"
+                                                         controls:ToolTip.Tip="{Binding TipGpuLayers}"
+                                                        Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding ThreadsLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding ThreadsText}"
+                                                    controls:ToolTip.Tip="{Binding TipThreads}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding ThreadsBatchLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding ThreadsBatchText}"
+                                                    controls:ToolTip.Tip="{Binding TipThreadsBatch}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding MainGpuLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding MainGpuText}"
+                                                    controls:ToolTip.Tip="{Binding TipMainGpu}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                 <Grid ColumnDefinitions="*,12,*,12,*,12,*,12,*">
+                                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                             <ToggleSwitch IsChecked="{Binding FlashAttention}" controls:ToolTip.Tip="{Binding TipFlashAttention}"/>
+                                             <TextBlock Text="{Binding FlashAttentionLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                         </StackPanel>
+                                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                             <ToggleSwitch IsChecked="{Binding Mmap}" controls:ToolTip.Tip="{Binding TipMmap}"/>
+                                             <TextBlock Text="{Binding MemoryMapLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                         </StackPanel>
+                                         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                             <ToggleSwitch IsChecked="{Binding Mlock}" controls:ToolTip.Tip="{Binding TipMlock}"/>
+                                             <TextBlock Text="{Binding MlockLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                         </StackPanel>
+                                         <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                             <ToggleSwitch IsChecked="{Binding MmqEnabled}" controls:ToolTip.Tip="{Binding TipMmq}"/>
+                                             <TextBlock Text="{Binding MmqLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                         </StackPanel>
+                                         <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                             <ToggleSwitch IsChecked="{Binding KvOffloadEnabled}" controls:ToolTip.Tip="{Binding TipKvOffload}"/>
+                                             <TextBlock Text="{Binding KvOffloadLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                         </StackPanel>
+                                     </Grid>
+<Grid ColumnDefinitions="150,*,150,*">
+                                         <TextBlock Grid.Column="0" Text="{Binding CacheTypeKLabel}" FontSize="12" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                         <ComboBox Grid.Column="1" Margin="16,0,16,0" ItemsSource="{Binding CacheTypeKOptions}" SelectedItem="{Binding CacheTypeK}"
+                                                   controls:ToolTip.Tip="{Binding CacheTypeKTip}"
+                                                   Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                         <TextBlock Grid.Column="2" Text="{Binding CacheTypeVLabel}" FontSize="12" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                         <ComboBox Grid.Column="3" Margin="16,0,0,0" ItemsSource="{Binding CacheTypeVOptions}" SelectedItem="{Binding CacheTypeV}"
+                                                   controls:ToolTip.Tip="{Binding CacheTypeVTip}"
+                                                   Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                     </Grid>
+                                     <Grid ColumnDefinitions="150,*,150,*">
+                                         <TextBlock Grid.Column="0" Text="{Binding CacheRamLabel}" FontSize="12" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                         <TextBox Grid.Column="1" Margin="16,0,16,0" Text="{Binding CacheRamText}"
+                                                     controls:ToolTip.Tip="{Binding CacheRamTip}"
+                                                     Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                         <TextBlock Grid.Column="2" Text="{Binding CacheReuseLabel}" FontSize="12" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                        <TextBox Grid.Column="3" Margin="16,0,0,0" Text="{Binding CacheReuseText}"
+                                                      controls:ToolTip.Tip="{Binding CacheReuseTip}"
+                                                      Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+                                     </Grid>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- TAB: Context & Sampling -->
+                <TabItem Header="{Binding TabContextSampling}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="10">
+                            <!-- Context & Batch -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding ContextBatchTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding ContextLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding ContextSizeText}"
+                                                    controls:ToolTip.Tip="{Binding TipContextSize}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding BatchLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding BatchSizeText}"
+                                                    controls:ToolTip.Tip="{Binding TipBatchSize}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding UbatchLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding UbatchSizeText}"
+                                                    controls:ToolTip.Tip="{Binding TipUBatchSize}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding MaxTokensLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding MaxTokensText}"
+                                                    controls:ToolTip.Tip="{Binding TipMaxTokens}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Sampling -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding SamplingTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding TemperatureLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding TemperatureText}"
+                                                    controls:ToolTip.Tip="{Binding TipTemperature}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding TopPLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding TopPText}"
+                                                    controls:ToolTip.Tip="{Binding TipTopP}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding TopKLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding TopKText}"
+                                                    controls:ToolTip.Tip="{Binding TipTopK}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding MinPLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding MinPText}"
+                                                    controls:ToolTip.Tip="{Binding TipMinP}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding TypicalPLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding TypicalPText}"
+                                                    controls:ToolTip.Tip="{Binding TipTypicalP}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding RepeatPenaltyLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding RepeatPenaltyText}"
+                                                    controls:ToolTip.Tip="{Binding TipRepeatPenalty}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding RepeatLastNLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding RepeatLastNText}"
+                                                    controls:ToolTip.Tip="{Binding TipRepeatLastN}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding PresencePenaltyLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding PresencePenaltyText}"
+                                                    controls:ToolTip.Tip="{Binding TipPresencePenalty}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding FrequencyPenaltyLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding FrequencyPenaltyText}"
+                                                    controls:ToolTip.Tip="{Binding TipFrequencyPenalty}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding SeedLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SeedText}"
+                                                    controls:ToolTip.Tip="{Binding TipSeed}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Mirostat -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding MirostatSamplingCheck}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                                   controls:ToolTip.Tip="{Binding TipMirostat}"/>
+                                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedIndex="{Binding MirostatModeInt}"
+                                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="Disabled (0)"/>
+                                            <ComboBoxItem Content="Mode 1"/>
+                                            <ComboBoxItem Content="Mode 2"/>
+                                        </ComboBox>
+                                    </Grid>
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="280,*">
+                                            <TextBlock Grid.Column="0" Text="{Binding TauLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                            <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding MirostatTauText}"
+                                                       controls:ToolTip.Tip="{Binding TipTau}"
+                                                       Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="280,*">
+                                            <TextBlock Grid.Column="0" Text="{Binding EtaLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                            <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding MirostatEtaText}"
+                                                       controls:ToolTip.Tip="{Binding TipEta}"
+                                                       Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- TAB: Advanced -->
+                <TabItem Header="{Binding TabAdvanced}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="10">
+                            <!-- MTP / Speculative -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding MtpTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                     <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding SpecTypeLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                         <ComboBox Grid.Column="1" Margin="24,0,0,0" ItemsSource="{Binding SpecTypeOptions}" SelectedItem="{Binding SpecType}"
+                                                     controls:ToolTip.Tip="{Binding TipSpecType}"
+                                                     Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                         <TextBlock Grid.Column="0" Text="{Binding PredictCountLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                         <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding PredictCountText}"
+                                                     controls:ToolTip.Tip="{Binding TipPredictCount}"
+                                                     Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Speculative draft Params -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding SpecDraftParamsTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding DraftGpuLayersLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SpecDraftGpuLayers}"
+                                                  controls:ToolTip.Tip="{Binding TipSpecDraftGpuLayers}"
+                                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding DraftNMaxLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SpecDraftNMaxText}"
+                                                    controls:ToolTip.Tip="{Binding TipSpecDraftNMax}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding DraftNMinLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SpecDraftNMinText}"
+                                                    controls:ToolTip.Tip="{Binding TipSpecDraftNMin}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding DraftPSplitLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SpecDraftPSplitText}"
+                                                    controls:ToolTip.Tip="{Binding TipSpecDraftPSplit}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding DraftPMinLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SpecDraftPMinText}"
+                                                    controls:ToolTip.Tip="{Binding TipSpecDraftPMin}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- YARN / Rope -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding YarnRopeTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding RopeFreqBaseLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding RopeFreqBase}" Watermark="e.g. 10000"
+                                                  controls:ToolTip.Tip="{Binding TipRopeFreqBase}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding RopeFreqScaleLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding RopeFreqScale}" Watermark="e.g. 1.0"
+                                                  controls:ToolTip.Tip="{Binding TipRopeFreqScale}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding YarnOrigCtxLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding YarnOriginalContext}" Watermark="e.g. 8192"
+                                                  controls:ToolTip.Tip="{Binding TipYarnOriginalContext}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Advanced Options -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                     <TextBlock Text="{Binding AdvancedOptionsTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                 <WrapPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding Numa}" controls:ToolTip.Tip="{Binding TipNuma}"/>
+                                              <TextBlock Text="{Binding NumaLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding CachePrompt}" controls:ToolTip.Tip="{Binding TipCachePrompt}"/>
+                                              <TextBlock Text="{Binding CachePromptLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding ContBatching}" controls:ToolTip.Tip="{Binding TipContBatching}"/>
+                                              <TextBlock Text="{Binding ContBatchingLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                              <ToggleSwitch IsChecked="{Binding ContextShift}" controls:ToolTip.Tip="{Binding TipContextShift}"/>
+                                              <TextBlock Text="{Binding ContextShiftLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding VerboseLogging}" controls:ToolTip.Tip="{Binding TipVerboseLogging}"/>
+                                              <TextBlock Text="{Binding VerboseLoggingLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding EnableWebUI}" controls:ToolTip.Tip="{Binding TipWebUI}"/>
+                                              <TextBlock Text="{Binding WebUILabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding EnableMetrics}" controls:ToolTip.Tip="{Binding TipMetrics}"/>
+                                              <TextBlock Text="{Binding MetricsLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding Reasoning}" controls:ToolTip.Tip="{Binding TipReasoning}"/>
+                                              <TextBlock Text="{Binding ReasoningLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding EmbeddingMode}" controls:ToolTip.Tip="{Binding TipEmbeddingMode}"/>
+                                              <TextBlock Text="{Binding EmbeddingModeLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                              <ToggleSwitch IsChecked="{Binding PriorityHigh}" controls:ToolTip.Tip="{Binding TipPriorityHigh}"/>
+                                              <TextBlock Text="{Binding PriorityHighLabel}" FontSize="13" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                          </StackPanel>
+                                      </WrapPanel>
+                                 </StackPanel>
+                            </Border>
+
+                            <!-- Custom Arguments -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                   <TextBlock Text="{Binding CustomArgsTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBox Grid.Column="0" Text="{Binding AdditionalArgs}" Watermark="{Binding CustomArgsWatermark}"
+                                              controls:ToolTip.Tip="{Binding TipCustomArgs}"
+                                              Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                              AcceptsReturn="True" Height="60"/>
+                                        <Button Grid.Column="1" Command="{Binding OpenArgPickerCommand}" Content="+"
+                                                Width="32" Height="32" FontSize="18" FontWeight="Bold"
+                                                Background="#4338CA" Foreground="White" BorderThickness="0" CornerRadius="6"
+                                                VerticalAlignment="Top" Margin="8,4,0,0"
+                                                controls:ToolTip.Tip="Выбрать аргументы из списка"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Export -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding ExportTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Button Command="{Binding ExportToBatCommand}" Content="{Binding ExportBatBtn}"
+                                                Background="#4338CA" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" CornerRadius="6"/>
+                                        <Button Command="{Binding CopyCommandLineCommand}" Content="{Binding CopyCmdLineBtn}"
+                                                Background="#475569" Foreground="{DynamicResource ThemeTextPrimary}" Padding="16,8" CornerRadius="6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- TAB: Connection -->
+                <TabItem Header="{Binding TabConnection}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="10">
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Text="{Binding ConnectionSettingsTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding HostLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding Host}" Watermark="127.0.0.1"
+                                                  controls:ToolTip.Tip="{Binding TipHost}" Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding PortLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding PortText}"
+                                                    controls:ToolTip.Tip="{Binding TipPort}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding TimeoutLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding TimeoutText}"
+                                                    controls:ToolTip.Tip="{Binding TipTimeout}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="280,*">
+                                        <TextBlock Grid.Column="0" Text="{Binding SlotsLabel}" FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding SlotsText}"
+                                                    controls:ToolTip.Tip="{Binding TipSlots}"
+                                                    Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8" HorizontalAlignment="Stretch"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Server Controls -->
+                            <Border Background="{DynamicResource ThemeCard}" CornerRadius="10" Padding="20" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                <StackPanel Spacing="14">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Button Command="{Binding StartServerCommand}" Content="{Binding StartBtn}"
+                                                Background="#059669" Foreground="{DynamicResource ThemeTextPrimary}" Padding="24,12" CornerRadius="8" FontWeight="SemiBold"/>
+                                        <Button Command="{Binding StopServerCommand}" Content="{Binding StopBtn}"
+                                                Background="#DC2626" Foreground="{DynamicResource ThemeTextPrimary}" Padding="24,12" CornerRadius="8" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Border>
+    </DockPanel>
+</UserControl>

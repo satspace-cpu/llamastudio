@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LlamaStudio.Controls.TpsGaugeControl"
+             x:DataType="vm:MonitoringViewModel"
+             xmlns:vm="using:LlamaStudio.ViewModels">
+
+    <Border Background="#1a1a2e" CornerRadius="12" Padding="16,12">
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <!-- TPS Value -->
+            <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
+                <!-- Generation tok/s (left) -->
+                <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding GenLabel}" FontSize="10" Foreground="#FBBF24" HorizontalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding TpsText}" 
+                                   FontSize="32" FontWeight="Bold" 
+                                   Foreground="#FBBF24" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="tok/s" 
+                                   FontSize="12" Foreground="#94A3B8" 
+                                   VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                    </StackPanel>
+                </StackPanel>
+                <!-- Separator (center) -->
+                <Border Grid.Column="1" Width="1" Background="#334155" Margin="12,4"/>
+                <!-- Prompt tok/s (right) -->
+                <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding TpsPromptLabel}" FontSize="10" Foreground="#8B5CF6" HorizontalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding PromptTpsText}" 
+                                   FontSize="32" FontWeight="Bold" 
+                                   Foreground="#8B5CF6" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="tok/s" 
+                                   FontSize="12" Foreground="#94A3B8" 
+                                   VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <!-- Progress Bar -->
+            <ProgressBar Value="{Binding TpsPercent}" Maximum="100" Height="8" 
+                         CornerRadius="4" Background="#2D1B69" Foreground="#FBBF24"/>
+
+            <!-- Scale labels -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0" Text="0" FontSize="10" Foreground="#64748B"/>
+                <TextBlock Grid.Column="1" Text="150" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="300+" FontSize="10" Foreground="#64748B"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

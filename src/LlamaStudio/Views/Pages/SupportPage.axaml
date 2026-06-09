@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             x:Class="LlamaStudio.Views.Pages.SupportPage"
+             x:DataType="vm:SupportViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" Margin="32">
+
+            <TextBlock Text="Обсуждение и поддержка"
+                       FontSize="28" FontWeight="Bold"
+                       Foreground="{DynamicResource ThemeTextPrimary}"/>
+
+            <!-- Inspired by: pytraveler -->
+            <Border Background="{DynamicResource ThemeBackground}"
+                    BorderBrush="#6366F1"
+                    BorderThickness="1.5"
+                    CornerRadius="24"
+                    Padding="28">
+                <StackPanel Spacing="20">
+                    <!-- Title -->
+                    <TextBlock Text="🤝 Вдохновитель проекта"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="#818CF8"
+                               HorizontalAlignment="Center"/>
+
+                    <!-- Profile section -->
+                    <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                        <!-- Avatar -->
+                        <Border Width="64" Height="64"
+                                CornerRadius="32"
+                                Background="#1E293B"
+                                BorderBrush="#6366F1"
+                                BorderThickness="2"
+                                Cursor="Hand"
+                                PointerPressed="Avatar_Click">
+                            <TextBlock Text="P" FontSize="28" FontWeight="Bold"
+                                       Foreground="#818CF8"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Info -->
+                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Cursor="Hand" PointerPressed="Profile_Click">
+                                <Run Text="pytraveler" FontWeight="Bold" FontSize="18" Foreground="#C084FC"/>
+                            </TextBlock>
+                            <TextBlock Text="github.com/pytraveler"
+                                       FontSize="12"
+                                       Foreground="#64748B"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Project section -->
+                    <Border Background="#0F172A"
+                            CornerRadius="16"
+                            Padding="20"
+                            Cursor="Hand"
+                            PointerPressed="Project_Click">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <!-- Project icon -->
+                                <Border Width="48" Height="48"
+                                        CornerRadius="12"
+                                        Background="#0C4A6E">
+                                    <TextBlock Text="🦙" FontSize="24"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Project info -->
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="LlamaServerLauncherAvalonia"
+                                               FontSize="16" FontWeight="SemiBold"
+                                               Foreground="#60A5FA"/>
+                                    <TextBlock Text="github.com/pytraveler/LlamaServerLauncherAvalonia"
+                                               FontSize="11"
+                                               Foreground="#64748B"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock Text="Проект, который вдохновил создание Llama Studio"
+                                       FontSize="12"
+                                       Foreground="#94A3B8"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Telegram -->
+            <Border Background="{DynamicResource ThemeBackground}"
+                    BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Telegram: Llama Studio"
+                               FontSize="18" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+
+                    <TextBlock Text="Присоединяйтесь к нашему сообществу в Telegram. Здесь вы можете получить помощь, предложить улучшения и следить за обновлениями программы."
+                               Foreground="{DynamicResource ThemeTextSecondary}"
+                               TextWrapping="Wrap"/>
+
+                    <Button Content="Открыть канал"
+                            Classes="accent"
+                            HorizontalAlignment="Left"
+                            Padding="20,12"
+                            CornerRadius="8"
+                            Tag="https://t.me/LlamaStudioApp"/>
+
+                    <TextBlock Text="t.me/LlamaStudioApp"
+                               Foreground="#2AABEE"
+                               FontSize="14"
+                               FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Where to find what -->
+            <Border Background="{DynamicResource ThemeBackground}"
+                    BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Где что искать?"
+                               FontSize="18" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="📢 Новости и обновления — в канале"
+                                       Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="💬 Вопросы и помощь — в привязанной группе под постами"
+                                       Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🐛 Сообщение об ошибке — опишите проблему в группе"
+                                       Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

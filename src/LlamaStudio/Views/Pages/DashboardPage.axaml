@@ -1,0 +1,354 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LlamaStudio.ViewModels"
+              xmlns:core="using:LlamaStudio.Core.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LlamaStudio.Views.Pages.DashboardPage"
+             x:DataType="vm:DashboardViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" Margin="20">
+            <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+
+            <!-- Status Cards — 5 columns -->
+            <UniformGrid Columns="5">
+                <!-- Server Status -->
+                <Border Background="{DynamicResource CardServerBackground}" CornerRadius="12" Padding="20"
+                        Margin="4"
+                        BorderBrush="{DynamicResource CardServerAccent}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ServerLabel}" FontSize="13"
+                                    Foreground="{DynamicResource CardServerLabel}"/>
+                        <TextBlock Text="{Binding ServerStatus.State}"
+                                   FontSize="22" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <TextBlock Text="{Binding ServerStatus.Uptime, StringFormat='Uptime: {0:hh\:mm\:ss}'}"
+                                   FontSize="12" Foreground="{DynamicResource CardSubText}"/>
+                        <Button Content="{Binding StartServerBtn}"
+                                Command="{Binding StartServerCommand}"
+                                IsVisible="{Binding ServerStopped}"
+                                Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                BorderThickness="0" CornerRadius="6" Padding="10,6"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                        <Button Content="{Binding StopServerBtn}"
+                                Command="{Binding StopServerCommand}"
+                                IsVisible="{Binding ServerRunning}"
+                                Background="{DynamicResource BtnDanger}" Foreground="{DynamicResource BadgeText}"
+                                BorderThickness="0" CornerRadius="6" Padding="10,6"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Models -->
+                <Button Command="{Binding NavigateCommand}"
+                        CommandParameter="Models"
+                        Background="{DynamicResource CardModelsBackground}" CornerRadius="12" Padding="20"
+                        BorderBrush="{DynamicResource CardModelsAccent}" BorderThickness="1"
+                        Margin="4"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Cursor="Hand">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ModelsCard}" FontSize="13" Foreground="{DynamicResource CardModelsLabel}"/>
+                        <TextBlock Text="{Binding TotalModels}"
+                                    FontSize="22" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <TextBlock Text="{Binding Indexed}" FontSize="12" Foreground="{DynamicResource CardSubText}"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Profiles -->
+                <Border Background="{DynamicResource CardProfilesBackground}" CornerRadius="12" Padding="20"
+                        Margin="4"
+                        BorderBrush="{DynamicResource CardProfilesAccent}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ProfilesCard}" FontSize="13" Foreground="{DynamicResource CardProfilesLabel}"/>
+                        <TextBlock Text="{Binding ActiveProfileName}"
+                                    FontSize="14" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"
+                                    TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding TotalProfiles, StringFormat='{}{0} сохранено'}" FontSize="12" Foreground="{DynamicResource CardSubText}"/>
+                        <ComboBox ItemsSource="{Binding AllProfiles}"
+                                  SelectedItem="{Binding SelectedProfile}"
+                                  Height="26"
+                                  Background="{DynamicResource ThemeInputBackground}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                  Foreground="{DynamicResource ThemeTextPrimary}" FontSize="11">
+                            <ComboBox.DataTemplates>
+                                <DataTemplate DataType="core:ServerProfile">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                        <Ellipse Width="5" Height="5" Fill="#10B981" IsVisible="{Binding IsDefault}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.DataTemplates>
+                        </ComboBox>
+                        <Button Content="{Binding SwitchProfileBtn}"
+                                Command="{Binding SwitchProfileCommand}"
+                                Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                BorderThickness="0" CornerRadius="6" Padding="8,4"
+                                FontSize="11" FontWeight="SemiBold" Cursor="Hand"
+                                IsVisible="{Binding SelectedProfile}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Version -->
+                <Border Background="{DynamicResource CardVersionBackground}" CornerRadius="12" Padding="20"
+                        Margin="4"
+                        BorderBrush="{DynamicResource CardVersionAccent}" BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding LlamaCppCard}" FontSize="13" Foreground="{DynamicResource CardVersionLabel}"/>
+                        <TextBlock Text="{Binding ActiveVersion}"
+                                   FontSize="14" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding VersionStatusText}" FontSize="11" Foreground="{DynamicResource CardSubText}"/>
+                        <Button Content="{Binding UpdateBtnText}"
+                                Command="{Binding UpdateLlamaCppCommand}"
+                                IsVisible="{Binding HasUpdate}"
+                                Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                                BorderThickness="0" CornerRadius="6" Padding="10,6"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                FontSize="12" FontWeight="SemiBold"/>
+                   <ComboBox ItemsSource="{Binding InstalledVersions}"
+                              SelectedItem="{Binding SelectedVersion, Mode=TwoWay}"
+                              Background="{DynamicResource ThemeInputBackground}"
+                              Foreground="{DynamicResource ThemeTextPrimary}"
+                              BorderBrush="{DynamicResource CardVersionAccent}"
+                              BorderThickness="1" CornerRadius="6" Padding="8,4"
+                              HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                              FontSize="11" FontWeight="Normal"
+                              IsVisible="{Binding InstalledVersions.Count, Converter={StaticResource GreaterThanConverter}, ConverterParameter=0}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Active Model -->
+                <Border Background="{DynamicResource CardModelBackground}" CornerRadius="12" Padding="20"
+                        Margin="4"
+                        BorderBrush="{DynamicResource CardModelAccent}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ActiveModelLabel}" FontSize="13" Foreground="{DynamicResource CardModelLabel}"/>
+                        <TextBlock Text="{Binding SelectedModel}"
+                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- GPU Monitor Card -->
+            <Border Background="{DynamicResource GpuMonitorBackground}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <!-- Header -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding GpuMonitorTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GpuMonitorHeader}"/>
+                        <Ellipse Width="6" Height="6" Fill="#10B981" Margin="8,4,4,0"/>
+                        <TextBlock Text="{Binding GpuLive}" FontSize="11" Foreground="#10B981"/>
+                    </StackPanel>
+
+                    <!-- GPU Info -->
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding GpuName}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <TextBlock Text="{Binding GpuMemoryInfo}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <!-- VRAM -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuVramLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                                <TextBlock Text="{Binding GpuVramGbText}" FontSize="12" Foreground="#60A5FA"/>
+                                <TextBlock Text="{Binding GpuVramText}" FontSize="12" FontWeight="SemiBold" Foreground="#3B82F6"/>
+                            </StackPanel>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuVramUsage}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ProgressVram}"/>
+                    </StackPanel>
+
+                    <!-- GPU Core -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuCoreLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuCoreText}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981"/>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuCoreUsage}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ProgressCore}"/>
+                    </StackPanel>
+
+                    <!-- Power -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuPowerLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                                <TextBlock Text="{Binding GpuPowerWattsText}" FontSize="12" Foreground="#FBBF24"/>
+                                <TextBlock Text="{Binding GpuPowerText}" FontSize="12" FontWeight="SemiBold" Foreground="#F59E0B"/>
+                            </StackPanel>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuPowerUsage}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ProgressPower}"/>
+                    </StackPanel>
+
+                    <!-- GPU Temperature -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuTempLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuTempText}" FontSize="12" FontWeight="SemiBold" Foreground="#EF4444"/>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuTempPercent}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{Binding GpuTempBrush}"/>
+                    </StackPanel>
+
+                    <!-- GPU Memory Temperature -->
+                    <StackPanel Spacing="4" IsVisible="{Binding HasGpuMemTemp}">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuMemTempLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuMemTempText}" FontSize="12" FontWeight="SemiBold" Foreground="#F97316"/>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuMemTempPercent}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{Binding GpuMemTempBrush}"/>
+                    </StackPanel>
+
+                    <!-- RAM Usage -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding RamUsageLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                                <TextBlock Text="{Binding RamUsedText}" FontSize="12" Foreground="#10B981"/>
+                                <TextBlock Text="{Binding RamPercentText}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981"/>
+                            </StackPanel>
+                        </Grid>
+                        <ProgressBar Value="{Binding RamUsedPercent}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ProgressRam}"/>
+                    </StackPanel>
+
+                    <!-- Fan -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,* Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding GpuFanLabel}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuFanText}" FontSize="12" FontWeight="SemiBold" Foreground="#8B5CF6"/>
+                        </Grid>
+                        <ProgressBar Value="{Binding GpuFanSpeed}" Maximum="100" Height="12" CornerRadius="6" Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ProgressFan}"/>
+                    </StackPanel>
+
+                    <!-- Stats Row -->
+                    <Grid ColumnDefinitions="*,*,*" Margin="0,6,0,0">
+                        <Border Grid.Column="0" Background="{DynamicResource GpuMonitorInner}" CornerRadius="8" Padding="10,8" Margin="0,0,2,0"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding GpuClockText}" FontSize="13" FontWeight="SemiBold" Foreground="#3B82F6" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding GpuClockLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Background="{DynamicResource GpuMonitorInner}" CornerRadius="8" Padding="10,8" Margin="2,0,2,0"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding GpuThroughputText}" FontSize="13" FontWeight="SemiBold" Foreground="#F59E0B" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding GpuThroughputLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Background="{DynamicResource GpuMonitorInner}" CornerRadius="8" Padding="10,8" Margin="2,0,0,0"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding GpuPromptThroughputText}" FontSize="13" FontWeight="SemiBold" Foreground="#8B5CF6" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding GpuPromptThroughputLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                </StackPanel>
+            </Border>
+
+            <!-- Profile Card -->
+            <Border Background="{DynamicResource CardSectionBackground}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="14">
+                   <!-- Header with selector -->
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <PathIcon Data="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                   Width="18" Height="18" Foreground="{DynamicResource GpuMonitorHeader}"/>
+                        <TextBlock Text="{Binding ProfileTitle}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GpuMonitorHeader}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
+                            <ComboBox ItemsSource="{Binding AllProfiles}"
+                                       SelectedItem="{Binding SelectedProfile}"
+                                       MinWidth="150" MaxWidth="200" Height="30"
+                                       Background="{DynamicResource ThemeInputBackground}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                       Foreground="{DynamicResource ThemeTextPrimary}" FontSize="12">
+                            <ComboBox.DataTemplates>
+                                <DataTemplate DataType="core:ServerProfile">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                        <Ellipse Width="6" Height="6" Fill="#10B981" IsVisible="{Binding IsDefault}"/>
+                                        <TextBlock Text="(default)" FontSize="9" Foreground="#10B981" IsVisible="{Binding IsDefault}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.DataTemplates>
+                         </ComboBox>
+                      <Button Content="{Binding SwitchProfileBtn}"
+                                  Command="{Binding SwitchProfileCommand}"
+                                  Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                  BorderThickness="0" CornerRadius="6" Padding="10,4"
+                                  FontSize="11" FontWeight="SemiBold" Cursor="Hand"
+                                  IsVisible="{Binding SelectedProfile}"/>
+                         <Button Content="{Binding SetDefaultBtn}"
+                                  Command="{Binding SetDefaultProfileCommand}"
+                                  Background="{DynamicResource BtnPurple}" Foreground="{DynamicResource BadgeText}"
+                                  BorderThickness="0" CornerRadius="6" Padding="10,4"
+                                  FontSize="11" FontWeight="SemiBold" Cursor="Hand"
+                                  IsVisible="{Binding SelectedProfile}"
+                                  IsEnabled="{Binding CanSetDefault}"/>
+                         </StackPanel>
+                     </StackPanel>
+
+                    <!-- Active profile indicator -->
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="8" Height="8" Fill="#10B981" IsVisible="{Binding ServerRunning}"/>
+                        <Ellipse Width="8" Height="8" Fill="#6B7280" IsVisible="{Binding ServerStopped}"/>
+                        <TextBlock Text="{Binding ActiveProfileLabel}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        <TextBlock Text="{Binding ActiveProfileName}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                    </StackPanel>
+
+                    <!-- Models Row -->
+                    <Border Background="{DynamicResource ProfileModelBackground}" CornerRadius="8" Padding="14"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+                            <!-- Main Model -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding ProfileMainLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding ProfileMainModel}" FontSize="12" FontWeight="SemiBold" Foreground="#3B82F6" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            <!-- MMProj -->
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ProfileMmprojLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MmprojName}" FontSize="12" FontWeight="SemiBold" Foreground="#8B5CF6" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            <!-- Draft -->
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding ProfileDraftLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DraftName}" FontSize="12" FontWeight="SemiBold" Foreground="#F59E0B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Parameters Row -->
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+                        <!-- Context -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding ProfileContextLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding ProfileContextText}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,2,0,0"/>
+                        <!-- Temperature -->
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ProfileTempLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProfileTempText}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,2,0,0"/>
+                        <!-- GPU Layers -->
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding ProfileGpuLayersLabel}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ProfileGpuLayersText}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,2,0,0"/>
+                    </Grid>
+
+                    <!-- Badges Row -->
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border Background="{DynamicResource BadgeMtp}" CornerRadius="6" Padding="8,4" IsVisible="{Binding ProfileHasMtp}">
+                            <TextBlock Text="{Binding ProfileMtpBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                        </Border>
+                        <Border Background="{DynamicResource BadgeReasoning}" CornerRadius="6" Padding="8,4" IsVisible="{Binding ProfileHasReasoning}">
+                            <TextBlock Text="{Binding ProfileReasoningBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                        </Border>
+                        <Border Background="{DynamicResource BadgeFlash}" CornerRadius="6" Padding="8,4" IsVisible="{Binding ProfileFlashAttention}">
+                            <TextBlock Text="{Binding ProfileFlashAttnBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                        </Border>
+                        <Border Background="{DynamicResource BadgeCache}" CornerRadius="6" Padding="8,4" IsVisible="{Binding ProfileCachePrompt}">
+                            <TextBlock Text="{Binding ProfileCacheBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                        </Border>
+                        <Border Background="{DynamicResource BadgeBatching}" CornerRadius="6" Padding="8,4" IsVisible="{Binding ProfileContBatching}">
+                            <TextBlock Text="{Binding ProfileBatchingBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

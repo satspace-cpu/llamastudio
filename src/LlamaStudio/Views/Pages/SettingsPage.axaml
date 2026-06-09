@@ -1,0 +1,136 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LlamaStudio.Views.Pages.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             x:Name="Root">
+
+    <ScrollViewer>
+        <StackPanel Spacing="20" Margin="20">
+            <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+
+            <!-- Language -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding GeneralSection}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                    <Grid ColumnDefinitions="180,*">
+                        <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtLanguage}"/>
+                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedItem="{Binding SelectedLanguage}"
+                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                  ItemsSource="{Binding LanguageOptions}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Paths -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding PathsSection}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                    <Grid ColumnDefinitions="180,*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding LlamaCppBaseDirLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtLlamaCppBaseDir}"/>
+                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding LlamaCppBaseDirectory}"
+                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                 BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8"
+                                 CornerRadius="8"/>
+                        <Button Grid.Column="2" Command="{Binding SelectLlamaCppBaseDirectoryCommand}"
+                                Content="{Binding BrowseBtn}" Background="{DynamicResource BtnSecondary}"
+                                Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="8"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="180,*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding LlamaCppDirLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtLlamaCppDir}"/>
+                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding LlamaCppDirectory}"
+                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                 BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8"
+                                 CornerRadius="8"/>
+                        <Button Grid.Column="2" Command="{Binding SelectLlamaCppDirectoryCommand}"
+                                Content="{Binding BrowseBtn}" Background="{DynamicResource BtnSecondary}"
+                                Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="8"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="180,*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding ModelsDirLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtModelsDir}"/>
+                        <TextBox Grid.Column="1" Margin="24,0,0,0" Text="{Binding ModelsDirectory}"
+                                 Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                 BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8"
+                                 CornerRadius="8"/>
+                        <Button Grid.Column="2" Command="{Binding SelectModelsDirectoryCommand}"
+                                Content="{Binding BrowseBtn}" Background="{DynamicResource BtnSecondary}"
+                                Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8" CornerRadius="8"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- General -->
+            <Border Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding GeneralSection}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                 <WrapPanel>
+                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                              <ToggleSwitch IsChecked="{Binding AutoCheckUpdates}" ToolTip.Tip="{Binding TtAutoCheckUpdates}"/>
+                              <TextBlock Text="{Binding AutoCheckUpdatesLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                          </StackPanel>
+<StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                <ToggleSwitch IsChecked="{Binding MinimizeToTray}" ToolTip.Tip="{Binding TtMinimizeToTray}"/>
+                                <TextBlock Text="{Binding MinimizeToTrayLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                <ToggleSwitch IsChecked="{Binding StartMinimized}" ToolTip.Tip="{Binding TtStartMinimized}"/>
+                                <TextBlock Text="{Binding StartMinimizedLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                                <ToggleSwitch IsChecked="{Binding AutoStartWithOS}" ToolTip.Tip="{Binding TtAutoStartWithOS}"/>
+                              <TextBlock Text="{Binding AutoStartWithOSLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                          </StackPanel>
+
+                           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                               <ToggleSwitch IsChecked="{Binding StartMonitoringWindow}" ToolTip.Tip="{Binding TtStartMonitoringWindow}"/>
+                               <TextBlock Text="{Binding StartMonitoringWindowLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                           </StackPanel>
+                           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,12">
+                               <ToggleSwitch IsChecked="{Binding KeepServerOnExit}" ToolTip.Tip="{Binding TtKeepServerOnExit}"/>
+                              <TextBlock Text="{Binding KeepServerOnExitLabel}" FontSize="13" Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                          </StackPanel>
+
+                      </WrapPanel>
+                    <Grid ColumnDefinitions="180,*">
+                        <TextBlock Grid.Column="0" Text="{Binding ThemeLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtTheme}"/>
+                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedItem="{Binding Theme}"
+                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8"
+                                  ItemsSource="{Binding ThemeOptions}"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="180,*">
+                        <TextBlock Grid.Column="0" Text="{Binding UpdateChannelLabel}"
+                                   FontSize="14" Foreground="{DynamicResource SectionLabel}" VerticalAlignment="Center"
+                                   ToolTip.Tip="{Binding TtUpdateChannel}"/>
+                        <ComboBox Grid.Column="1" Margin="24,0,0,0" SelectedItem="{Binding UpdateChannel}"
+                                  Background="{DynamicResource ThemeCard}" Foreground="{DynamicResource ThemeTextPrimary}"
+                                  BorderBrush="{DynamicResource ThemeBorder}" Padding="10,8" CornerRadius="8">
+                            <ComboBoxItem Content="{Binding StableChannel, ElementName=Root}"/>
+                            <ComboBoxItem Content="{Binding PrereleaseChannel, ElementName=Root}"/>
+                            <ComboBoxItem Content="{Binding NightlyChannel, ElementName=Root}"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

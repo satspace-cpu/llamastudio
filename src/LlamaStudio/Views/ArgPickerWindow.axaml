@@ -1,0 +1,62 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LlamaStudio.ViewModels"
+        xmlns:models="using:LlamaStudio.Core.Models"
+        x:Class="LlamaStudio.Views.ArgPickerWindow"
+        x:DataType="vm:ArgPickerViewModel"
+        Title="Выбор аргументов CLI"
+        Width="900" Height="600"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="Auto,*,Auto" Background="#0F172A">
+        <!-- Filter -->
+        <TextBox Grid.Row="0" Text="{Binding FilterText}" Watermark="Фильтр флагов..."
+                 Margin="12,8" Padding="10,8" CornerRadius="6"
+                 Background="#1E293B" Foreground="#E2E8F0" BorderBrush="#334155"/>
+
+        <!-- Flag list -->
+        <ScrollViewer Grid.Row="1" Margin="12,0" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding FilteredFlags}">
+                <ItemsControl.DataTemplates>
+                    <DataTemplate DataType="models:CliFlagEntry">
+                        <Border Padding="8" Margin="0,3" CornerRadius="4"
+                                Background="#1E293B">
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                <!-- Checkbox -->
+                                <CheckBox Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
+                                          IsChecked="{Binding IsSelected}"
+                                          VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                                <!-- Flag name + description -->
+                                <StackPanel Grid.Column="1" Grid.Row="0" Spacing="3">
+                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#94A3B8" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <!-- Default value / user input -->
+                                <TextBox Grid.Column="2" Grid.Row="0"
+                                         Text="{Binding UserValue}" Width="160"
+                                         Padding="8,5" CornerRadius="4" FontSize="11"
+                                         Background="#0F172A" Foreground="#E2E8F0" BorderBrush="#334155"
+                                         IsVisible="{Binding RequiresValue}"/>
+                                <TextBlock Grid.Column="2" Grid.Row="0"
+                                           Text="{Binding DefaultValue}" FontSize="11" Foreground="#64748B"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding RequiresValue, Converter={StaticResource InvertedBoolConverter}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.DataTemplates>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="12,10" HorizontalAlignment="Right">
+            <TextBlock Text="{Binding SelectedCount, StringFormat='{}Выбрано: {0}'}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+            <Grid Width="20"/>
+            <Button x:Name="AddBtn" Content="Добавить" Click="AddButton_Click"
+                    Background="#4338CA" Foreground="White" Padding="18,7" CornerRadius="6"/>
+            <Button x:Name="CancelBtn" Content="Отмена" Click="CancelButton_Click"
+                    Background="#374151" Foreground="#E2E8F0" Padding="18,7" CornerRadius="6"/>
+        </StackPanel>
+    </Grid>
+</Window>

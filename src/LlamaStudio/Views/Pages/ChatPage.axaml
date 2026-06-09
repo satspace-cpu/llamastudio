@@ -1,0 +1,711 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:models="using:LlamaStudio.Core.Models"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             xmlns:md="https://github.com/whistyun/Markdown.Avalonia"
+x:Class="LlamaStudio.Views.Pages.ChatPage"
+              x:DataType="vm:ChatViewModel"
+              Background="{DynamicResource ThemeBackground}">
+
+    <UserControl.Resources>
+        <!-- Content part template -->
+        <DataTemplate x:Key="ContentPartTemplate" x:DataType="models:ContentPart">
+            <StackPanel>
+                <!-- Text part -->
+                <md:MarkdownScrollViewer Markdown="{Binding Content}" HorizontalAlignment="Stretch"
+                                         IsVisible="{Binding Type, Converter={StaticResource EqualConverter}, ConverterParameter='Text'}"/>
+                
+                <!-- Code block part -->
+                <Border IsVisible="{Binding Type, Converter={StaticResource EqualConverter}, ConverterParameter='Code'}"
+                        Background="{DynamicResource ThemeInputBackground}"
+                        BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                        CornerRadius="8" Margin="0,4,0,4">
+                    <StackPanel>
+                        <!-- Code header with language and actions -->
+                        <Border Background="{DynamicResource ThemeSurface}" Padding="8,6" CornerRadius="7,7,0,0"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14" Foreground="#8B5CF6"/>
+                                    <TextBlock Text="{Binding Language}" FontSize="11" FontWeight="SemiBold" Foreground="#8B5CF6" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <!-- Action buttons -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                    <Button Click="CopyCodeButton_Click"
+                                            Tag="{Binding Content}"
+                                            ToolTip.Tip="{Binding $parent[UserControl].DataContext.CopyCodeBtn}"
+                                            Background="Transparent" Padding="4,2" CornerRadius="4" Cursor="Hand">
+                                        <materialIcons:MaterialIcon Kind="ContentCopy" Width="14" Height="14" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                    </Button>
+                                    <Button Command="{Binding $parent[UserControl].DataContext.ExpandCodeCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{Binding $parent[UserControl].DataContext.ExpandCodeBtn}"
+                                            Background="Transparent" Padding="4,2" CornerRadius="4" Cursor="Hand">
+                                        <materialIcons:MaterialIcon Kind="OpenInNew" Width="14" Height="14" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        
+                        <!-- Code content -->
+                        <ScrollViewer MaxHeight="400" Padding="8" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding Content}" FontFamily="Consolas, monospace" FontSize="11"
+                                       Foreground="{DynamicResource ThemeTextPrimary}" TextWrapping="NoWrap"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel Background="{DynamicResource ThemeBackground}">
+        <!-- Top bar — connection status only -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" Padding="12,6"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Ellipse Width="8" Height="8" Fill="{Binding ServerState, Converter={StaticResource ServerStateBrushConverter}}"/>
+                <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource ServerConnectionStatusConverter}">
+                            <Binding Path="ServerState"/>
+                            <Binding Path="ServerModelName"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- MCP Servers panel -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1"
+                IsVisible="{Binding ShowMcpServers}">
+            <DockPanel Margin="12">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding McpServersTitle}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Command="{Binding ToggleMcpServersCommand}" Content="✕" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextSecondary}" Padding="8,4" CornerRadius="4" FontSize="12"/>
+                </Grid>
+
+                <!-- Add server form -->
+                <Border Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding McpAddServer}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="{Binding McpName}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox Grid.Column="1" Text="{Binding NewServerName}" FontSize="11" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="6,4" CornerRadius="4"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="{Binding McpType}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding TransportTypes}" SelectedItem="{Binding SelectedTransportType}" FontSize="11" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="6,4" CornerRadius="4" Width="120" HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <!-- Stdio fields -->
+                        <StackPanel IsVisible="{Binding SelectedTransportType, Converter={StaticResource McpTransportToVisibilityConverter}, ConverterParameter=Stdio}" Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="{Binding McpCommand}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerCommand}" FontSize="11" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="6,4" CornerRadius="4"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="{Binding McpArgs}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerArgs}" FontSize="11" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="6,4" CornerRadius="4"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- SSE fields -->
+                        <StackPanel IsVisible="{Binding SelectedTransportType, Converter={StaticResource McpTransportToVisibilityConverter}, ConverterParameter=Sse}" Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="{Binding McpUrl}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewServerUrl}" FontSize="11" Background="{DynamicResource ThemeInputBackground}" Foreground="{DynamicResource ThemeTextPrimary}" BorderBrush="{DynamicResource ThemeBorder}" Padding="6,4" CornerRadius="4" Watermark="http://127.0.0.1:8080"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Button Command="{Binding AddMcpServerCommand}" Content="{Binding McpAdd}" Background="{DynamicResource ThemeAccent}" Foreground="White" Padding="12,5" CornerRadius="6" FontSize="11" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Filesystem MCP quick setup -->
+                <Border Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding SetupFilesystemBtn}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <TextBlock Text="{Binding FilesystemMcpFolder}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextTrimming="CharacterEllipsis"/>
+                        <Button Command="{Binding SelectFilesystemFolderCommand}" Content="{Binding SelectFsFolderBtn}" Background="{DynamicResource BtnSuccess}" Foreground="White" Padding="12,5" CornerRadius="6" FontSize="11" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Server list -->
+                <ItemsControl ItemsSource="{Binding McpServers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="4"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" CornerRadius="8" Padding="10">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Ellipse Grid.Column="0" Width="8" Height="8" Fill="{Binding IsConnected, Converter={StaticResource McpConnectedToBrushConverter}}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Foreground="#10B981"/>
+                                            <Border Background="{DynamicResource ThemeInputBackground}" Padding="4,1" CornerRadius="3">
+                                                <TextBlock Text="{Binding TransportType}" FontSize="10" Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding ToolsCount}" FontSize="10" Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding LastError}" FontSize="10" Foreground="#EF4444" MaxLines="1" TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding LastError, Converter={StaticResource NotNullConverter}}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                        <Button Background="Transparent" Foreground="#10B981" Padding="4"
+                                                Command="{Binding $parent[UserControl].DataContext.DisableMcpServerCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                IsVisible="{Binding Enabled}"
+                                                ToolTip.Tip="Disable">
+                                            <materialIcons:MaterialIcon Kind="Cog" Width="14" Height="14"/>
+                                        </Button>
+                                        <Button Background="Transparent" Foreground="#64748B" Padding="4"
+                                                Command="{Binding $parent[UserControl].DataContext.EnableMcpServerCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                IsVisible="{Binding Enabled, Converter={StaticResource InvertedBoolConverter}}"
+                                                ToolTip.Tip="Enable">
+                                            <materialIcons:MaterialIcon Kind="CogOff" Width="14" Height="14"/>
+                                        </Button>
+                                        <Button Background="Transparent" Foreground="#EF4444" Padding="4"
+                                                Command="{Binding $parent[UserControl].DataContext.RemoveMcpServerCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                ToolTip.Tip="Remove">
+                                            <materialIcons:MaterialIcon Kind="Close" Width="12" Height="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="260,*">
+            <!-- Sessions sidebar -->
+            <Border Grid.Column="0" Background="{DynamicResource ThemeSurface}"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <!-- New Chat button centered at top -->
+                    <Button DockPanel.Dock="Top" Command="{Binding NewSessionCommand}"
+                            Background="{DynamicResource ThemeAccent}" Foreground="White"
+                            Padding="10,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold"
+                            Margin="12,12,12,8" VerticalAlignment="Center"
+                            ToolTip.Tip="{Binding NewSessionBtn}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <materialIcons:MaterialIcon Kind="Plus" Width="16" Height="16"/>
+                            <TextBlock Text="{Binding NewSessionBtn}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Separator -->
+                    <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource ThemeBorder}" Margin="12,0,12,4"/>
+                    <!-- Sessions list -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Sessions}" Background="Transparent">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                            Command="{Binding $parent[UserControl].DataContext.SelectSessionCommand}"
+                                            CommandParameter="{Binding}"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                        <Button.Styles>
+                                            <Style Selector="Button:checked > Grid > Border#selBg">
+                                                <Setter Property="Background" Value="#2D2D3D"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <Grid ColumnDefinitions="*,Auto" Margin="4,1"
+                                              DoubleTapped="SessionItemDoubleTapped"
+                                              PointerPressed="SessionItemPointerPressed">
+                                            <Border x:Name="selBg" CornerRadius="6" Margin="2,0"
+                                                    Background="{Binding $parent[UserControl].DataContext.SelectedSession,
+                                                    Converter={StaticResource SessionSelectedBgConverter},
+                                                    ConverterParameter={Binding Id}}"/>
+                                            <StackPanel Grid.Column="0" Spacing="2" Margin="8,6,4,6">
+                                                <TextBox Text="{Binding $parent[UserControl].DataContext.RenameText, Mode=TwoWay}"
+                                                         FontSize="11" Foreground="{DynamicResource ThemeTextPrimary}"
+                                                         MaxLines="1"
+                                                         Background="{DynamicResource ThemeInputBackground}" BorderBrush="{DynamicResource ThemeAccent}" BorderThickness="1"
+                                                         Padding="6,3" CornerRadius="4"
+                                                         IsVisible="{Binding $parent[UserControl].DataContext.IsRenaming}"
+                                                         KeyDown="RenameTextBoxKeyDown"
+                                                         Watermark="Rename session"/>
+                                                <TextBlock Text="{Binding Name}" FontSize="11"
+                                                           Foreground="{DynamicResource ThemeTextPrimary}" MaxLines="1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           IsVisible="{Binding $parent[UserControl].DataContext.IsRenaming, Converter={StaticResource InvertedBoolConverter}}"/>
+                                                <TextBlock Text="{Binding UpdatedAt}"
+                                                           FontSize="9" Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" Foreground="#EF4444" Padding="3"
+                                                    Margin="4,0,4,0" VerticalAlignment="Top"
+                                                    ToolTip.Tip="{Binding $parent[UserControl].DataContext.DeleteSessionCtxBtn}"
+                                                    Opacity="0.5">
+                                                <materialIcons:MaterialIcon Kind="Delete" Width="12" Height="12"/>
+                                            </Button>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Main chat area -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto" Background="{DynamicResource ThemeBackground}">
+               <!-- Messages area -->
+                 <ScrollViewer Grid.Row="0" x:Name="MessagesScroll" x:FieldModifier="public"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Disabled"
+                                 PointerWheelChanged="MessagesScrollPointerWheelChanged"
+                                 Background="{DynamicResource ThemeBackground}">
+                      <Panel Margin="0,20,0,120">
+                          <!-- No session placeholder -->
+                          <StackPanel IsVisible="{Binding SelectedSession, Converter={StaticResource NullVisibilityConverter}}"
+                                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                                      Spacing="8" Panel.Margin="0,0,0,0">
+                      <TextBlock Text="{Binding ChatWelcome}" FontSize="22" FontWeight="SemiBold"
+                                          Foreground="{DynamicResource ThemeTextPrimary}" HorizontalAlignment="Center"/>
+                              <TextBlock Text="{Binding ChatWelcomeSub}"
+                                        FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        HorizontalAlignment="Center"/>
+                          </StackPanel>
+
+                          <!-- Messages -->
+                         <ItemsControl ItemsSource="{Binding Messages}"
+                                       IsVisible="{Binding SelectedSession}"
+                                       VerticalAlignment="Top">
+                             <ItemsControl.ItemsPanel>
+                                 <ItemsPanelTemplate>
+                                     <StackPanel Spacing="20"/>
+                                 </ItemsPanelTemplate>
+                             </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel HorizontalAlignment="Stretch" Margin="24,0,24,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+                                            <Border Width="28" Height="28" CornerRadius="14"
+                                                    Background="{Binding Role, Converter={StaticResource ChatRoleToBrushConverter}}">
+                                                <TextBlock Text="{Binding Role, Converter={StaticResource ChatRoleToInitialConverter}}"
+                                                           Foreground="White" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           FontSize="12"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Role, Converter={StaticResource ChatRoleToNameConverter}}"
+                                                       FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource ThemeTextPrimary}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Timestamp}"
+                                                       FontSize="10" Foreground="{DynamicResource ThemeTextTertiary}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding ChatStreaming}" FontSize="10" Foreground="#F59E0B"
+                                                       VerticalAlignment="Center"
+                                                       IsVisible="{Binding IsStreaming}"/>
+                            <Panel HorizontalAlignment="Right"/>
+                                                <!-- Copy -->
+                                           <Button Command="{Binding $parent[UserControl].DataContext.CopyMessageCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   ToolTip.Tip="{Binding $parent[UserControl].DataContext.CopyBtn}"
+                                                   Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                               <materialIcons:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
+                                                               Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                           </Button>
+                                          <!-- Edit (only for user) -->
+                                           <Button IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='User'}"
+                                                   Command="{Binding $parent[UserControl].DataContext.EditMessageCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   ToolTip.Tip="{Binding $parent[UserControl].DataContext.EditMessageBtn}"
+                                                   Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                              <materialIcons:MaterialIcon Kind="Pencil" Width="16" Height="16"
+                                                               Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                           </Button>
+                                         <!-- Regenerate (only for assistant) -->
+                                           <Button IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='Assistant'}"
+                                                   Command="{Binding $parent[UserControl].DataContext.RegenerateMessageCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   ToolTip.Tip="{Binding $parent[UserControl].DataContext.RegenerateBtn}"
+                                                   Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                              <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16"
+                                                               Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                           </Button>
+                                          <!-- Bookmark -->
+                                           <Button Command="{Binding $parent[UserControl].DataContext.ToggleBookmarkCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                              <materialIcons:MaterialIcon Kind="BookmarkOutline" Width="16" Height="16"
+                                                               Foreground="{Binding IsBookmarked, Converter={StaticResource BookmarkBrushConverter}}"/>
+                                           </Button>
+                                         <!-- Delete -->
+                                           <Button Command="{Binding $parent[UserControl].DataContext.DeleteMessageCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   ToolTip.Tip="{Binding $parent[UserControl].DataContext.DeleteMessageBtn}"
+                                                   Background="Transparent" Padding="3,2" CornerRadius="4" Cursor="Hand">
+                                             <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="16" Height="16"
+                                                               Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                           </Button>
+                                        </StackPanel>
+
+                                       <!-- Images in message -->
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                                      VerticalScrollBarVisibility="Disabled"
+                                                      MaxHeight="400"
+                                                      IsVisible="{Binding ImageAttachments.Count, Converter={StaticResource GreaterThanConverter}, ConverterParameter=0}">
+                                          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                              <ItemsControl ItemsSource="{Binding ImageAttachments}">
+                                                  <ItemsControl.ItemTemplate>
+                                                      <DataTemplate>
+                                                          <Image Stretch="Uniform" MaxWidth="400" MaxHeight="400"
+                                                                 Source="{Binding Converter={StaticResource Base64ToImageConverter}}"
+                                                                 Margin="0,0,4,0"/>
+                                                      </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+<!-- Reasoning block (collapsible) -->
+                                         <Expander IsVisible="{Binding Converter={StaticResource ReasoningVisibilityConverter}}"
+                                                   IsExpanded="{Binding $parent[UserControl].DataContext.ShowReasoning}"
+                                                   Background="{DynamicResource ThemeInputBackground}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                                   Margin="0,0,0,8">
+                                            <Expander.Header>
+                                                <Border Padding="10,6,10,6">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                                        <materialIcons:MaterialIcon Grid.Column="0" Kind="LightbulbOn"
+                                                                Width="14" Height="14" Foreground="#8B5CF6" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.ReasoningHeader}"
+                                                                       FontSize="11" FontWeight="SemiBold" Foreground="#8B5CF6"
+                                                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </Expander.Header>
+                                                <Border Padding="10,4,10,8">
+                                                    <md:MarkdownScrollViewer Markdown="{Binding Reasoning}"/>
+                                                </Border>
+                                            </Expander>
+
+<!-- Main message content (hidden for Tool messages) -->
+                                              <StackPanel Orientation="Vertical"
+                                                          IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='NotTool'}"
+                                                          HorizontalAlignment="Stretch">
+                                                  <ItemsControl ItemsSource="{Binding ContentParts}" ItemTemplate="{StaticResource ContentPartTemplate}"/>
+                                                  <!-- Streaming cursor indicator -->
+                                                  <Border Width="2" Height="16" Background="#6366F1"
+                                                          IsVisible="{Binding IsStreaming}"
+                                                          Margin="2,0,0,0" VerticalAlignment="Center"/>
+                                              </StackPanel>
+
+                                          <!-- Tool message content (collapsed by default) -->
+                                            <Expander IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='Tool'}"
+                                                      IsExpanded="{Binding IsToolCollapsed, Converter={StaticResource InvertedBoolConverter}}"
+                                                      Background="{DynamicResource ThemeInputBackground}"
+                                                      BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                                      CornerRadius="8" Margin="0,4,0,0">
+                                                <Expander.Header>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,6">
+                                                        <materialIcons:MaterialIcon Kind="CodeBraces" Width="14" Height="14" Foreground="#8B5CF6"/>
+                                                        <TextBlock Text="{Binding ToolName}" FontSize="11" Foreground="#8B5CF6" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="·" FontSize="11" Foreground="{DynamicResource ThemeTextTertiary}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Content, Converter={StaticResource ToolResultLengthConverter}}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Expander.Header>
+                                                <Border Padding="8">
+                                                    <TextBlock Text="{Binding Content}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+                                                </Border>
+                                            </Expander>
+
+                                          <!-- Streaming indicator under assistant messages -->
+                                             <Border x:Name="StreamingIndicator"
+                                                     IsVisible="{Binding IsStreaming}"
+                                                     Margin="0,6,0,0" Padding="8,6"
+                                                     Background="{DynamicResource ThemeInputBackground}"
+                                                     CornerRadius="6"
+                                                     HorizontalAlignment="Left">
+                                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                     <Ellipse x:Name="Dot1" Width="6" Height="6" Fill="#6366F1"/>
+                                                     <Ellipse x:Name="Dot2" Width="6" Height="6" Fill="#8B5CF6"/>
+                                                     <Ellipse x:Name="Dot3" Width="6" Height="6" Fill="#A78BFA"/>
+                                                     <TextBlock Text="Генерация..."
+                                                                FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                                VerticalAlignment="Center"/>
+                                                 </StackPanel>
+                                                 <Border.Styles>
+                                                     <Style Selector="Ellipse#Dot1">
+                                                         <Style.Animations>
+                                                             <Animation Duration="0:0:1.2" Easing="SplineEasing" IterationCount="Infinite">
+                                                                 <KeyFrame Cue="0%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="50%">
+                                                                     <Setter Property="Opacity" Value="1.0"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="100%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                             </Animation>
+                                                         </Style.Animations>
+                                                     </Style>
+                                                     <Style Selector="Ellipse#Dot2">
+                                                         <Style.Animations>
+                                                             <Animation Duration="0:0:1.2" Easing="SplineEasing" IterationCount="Infinite">
+                                                                 <KeyFrame Cue="16%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="66%">
+                                                                     <Setter Property="Opacity" Value="1.0"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="100%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                             </Animation>
+                                                         </Style.Animations>
+                                                     </Style>
+                                                     <Style Selector="Ellipse#Dot3">
+                                                         <Style.Animations>
+                                                             <Animation Duration="0:0:1.2" Easing="SplineEasing" IterationCount="Infinite">
+                                                                 <KeyFrame Cue="33%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="83%">
+                                                                     <Setter Property="Opacity" Value="1.0"/>
+                                                                 </KeyFrame>
+                                                                 <KeyFrame Cue="100%">
+                                                                     <Setter Property="Opacity" Value="0.2"/>
+                                                                 </KeyFrame>
+                                                             </Animation>
+                                                         </Style.Animations>
+                                                     </Style>
+                                                 </Border.Styles>
+                                             </Border>
+
+                                          <!-- Undo button for user messages -->
+                                            <Button IsVisible="{Binding Role, Converter={StaticResource ChatRoleToVisibilityConverter}, ConverterParameter='User'}"
+                                                    Command="{Binding $parent[UserControl].DataContext.UndoMessageCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" Padding="4,2" CornerRadius="4" Cursor="Hand"
+                                                    Margin="0,4,0,0" HorizontalAlignment="Left"
+                                                    ToolTip.Tip="{Binding $parent[UserControl].DataContext.UndoMessageBtn}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <materialIcons:MaterialIcon Kind="Undo" Width="14" Height="14"
+                                                                                Foreground="{DynamicResource ThemeTextTertiary}"/>
+                                                    <TextBlock Text="{Binding $parent[UserControl].DataContext.UndoMessageBtn}"
+                                                               FontSize="10" Foreground="{DynamicResource ThemeTextTertiary}"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                       </StackPanel>
+                                  </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+             </Panel>
+                   </ScrollViewer>
+
+               <!-- Input area -->
+                   <Border Grid.Row="1" HorizontalAlignment="Stretch" Margin="24,12,24,20"
+                         Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" CornerRadius="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                    <!-- Attached images preview -->
+                    <ScrollViewer Grid.Row="0"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  MaxHeight="120"
+                                  Margin="8,8,8,4">
+                        <ScrollViewer.IsVisible>
+                            <Binding Path="AttachedImageBase64.Count" Converter="{StaticResource GreaterThanConverter}" ConverterParameter="0"/>
+                        </ScrollViewer.IsVisible>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ItemsControl ItemsSource="{Binding AttachedImageBase64}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource ThemeInputBackground}" CornerRadius="8" Padding="4" Margin="0,0,4,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <Image Stretch="Uniform" Width="80" Height="80" Source="{Binding Converter={StaticResource Base64ToImageConverter}}"/>
+                                                <Button Background="Transparent" Foreground="#EF4444" Padding="4"
+                                                        Command="{Binding $parent[UserControl].DataContext.RemoveImageCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialIcons:MaterialIcon Kind="Close" Width="14" Height="14"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Text input -->
+                <TextBox Grid.Row="1" x:Name="InputTextBox"
+                                 Text="{Binding InputText}"
+                                 Watermark="{Binding ChatInputWatermark}"
+                                 Background="Transparent" Foreground="{DynamicResource ThemeTextPrimary}"
+                                BorderThickness="0"
+                                Padding="14,12,14,12"
+                                AcceptsReturn="True"
+                                KeyDown="InputKeyDown"
+                                MaxLines="12"
+                                MinHeight="52"
+                                FontSize="14"
+                                TextWrapping="Wrap">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{Binding ChatCut}" Click="ContextMenuCut_Click"/>
+                                <MenuItem Header="{Binding ChatCopy}" Click="ContextMenuCopy_Click"/>
+                                <MenuItem Header="{Binding ChatPaste}" Click="ContextMenuPaste_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{Binding ChatSelectAll}" Click="ContextMenuSelectAll_Click"/>
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
+
+                    <!-- Settings panel -->
+                    <Border Grid.Row="2"
+                            IsVisible="{Binding ShowSettings}"
+                            Background="{DynamicResource ThemeInputBackground}"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,1,0,0"
+                            Padding="12,8">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="{Binding HideReasoningLabel}"
+                                       FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
+                                       VerticalAlignment="Center"/>
+                            <ToggleSwitch IsChecked="{Binding HideReasoning, Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- MCP chips row (like LM Studio) -->
+                    <Border Grid.Row="2"
+                            IsVisible="{Binding McpToolsEnabled}"
+                            Background="{DynamicResource ThemeSurface}"
+                            Padding="10,4,10,2"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,1,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <!-- Add tool button -->
+                            <Button Command="{Binding ToggleMcpServersCommand}"
+                                    Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                    Padding="6,3" CornerRadius="4"
+                                    ToolTip.Tip="Manage MCP servers">
+                                <materialIcons:MaterialIcon Kind="PlusCircle" Width="16" Height="16"/>
+                            </Button>
+                            <!-- MCP tool chips — active (green) and inactive (gray) -->
+                            <ItemsControl ItemsSource="{Binding McpServers}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding $parent[UserControl].DataContext.ToggleMcpServerCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                Padding="8,3" CornerRadius="4"
+                                                FontSize="11"
+                                                Background="{Binding Enabled, Converter={StaticResource McpChipBgConverter}}"
+                                                Foreground="{Binding Enabled, Converter={StaticResource McpChipFgConverter}}"
+                                                Opacity="{Binding IsConnected, Converter={StaticResource McpChipOpacityConverter}}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <materialIcons:MaterialIcon Kind="Wrench" Width="12" Height="12"/>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ToolsCount}" VerticalAlignment="Center" Opacity="0.6"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Toolbar + context indicator -->
+                    <Border Grid.Row="3"
+                            Background="{DynamicResource ThemeSurface}"
+                            Padding="0"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,0"
+                            CornerRadius="0,0,12,12">
+                        <Grid>
+                            <!-- Left: tools + model name -->
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <Button x:Name="AttachBtn"
+                                        Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        Padding="8" CornerRadius="4"
+                                        ToolTip.Tip="Attach file"
+                                        Click="AttachBtn_Click">
+                                    <materialIcons:MaterialIcon Kind="Upload"
+                                                Width="16" Height="16"/>
+                                </Button>
+                                <Button x:Name="ImageBtn"
+                                        Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        Padding="8" CornerRadius="4"
+                                        ToolTip.Tip="Image"
+                                        Click="ImageBtn_Click">
+                                  <materialIcons:MaterialIcon Kind="Image"
+                                                Width="16" Height="16"/>
+                                </Button>
+                                <!-- MCP toggle button -->
+                                <Button Padding="6,3" CornerRadius="4"
+                                        FontSize="11" FontWeight="SemiBold"
+                                        Command="{Binding ToggleMcpToolsCommand}"
+                                        ToolTip.Tip="MCP tools"
+                                        Background="{Binding McpToolsEnabled, Converter={StaticResource McpToggleBgConverter}}"
+                                        Foreground="{Binding McpToolsEnabled, Converter={StaticResource McpToggleFgConverter}}">
+                                    MCP
+                                </Button>
+                                <!-- Settings button -->
+                                <Button Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        Padding="8" CornerRadius="4"
+                                        Command="{Binding ToggleSettingsCommand}"
+                                        ToolTip.Tip="Settings">
+                                    <materialIcons:MaterialIcon Kind="Cog" Width="16" Height="16"/>
+                                </Button>
+                                <!-- Context usage indicator (like LM Studio) -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <ProgressBar Value="{Binding ContextUsedPercent}" Maximum="100" Width="60" Height="4"
+                                                 VerticalAlignment="Center" CornerRadius="2"
+                                                 Background="{DynamicResource ThemeInputBackground}"
+                                                 Foreground="{Binding ContextUsedPercent, Converter={StaticResource ContextProgressBarColorConverter}}"/>
+                                    <TextBlock Text="{Binding ContextUsageText}"
+                                               FontSize="10" Foreground="{DynamicResource ThemeTextTertiary}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Right: Send/Stop -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <Button Command="{Binding SendMessageCommand}"
+                                        Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        Padding="8" CornerRadius="4"
+                                        IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}"
+                                        ToolTip.Tip="Send (Enter)">
+                                  <materialIcons:MaterialIcon Kind="Send"
+                                               Width="18" Height="18"/>
+                                </Button>
+                                <Button Command="{Binding StopGenerationCommand}"
+                                        Background="Transparent" Foreground="{DynamicResource ThemeTextSecondary}"
+                                        Padding="8" CornerRadius="4"
+                                        IsVisible="{Binding IsGenerating}"
+                                        ToolTip.Tip="Stop">
+                                 <materialIcons:MaterialIcon Kind="StopCircleOutline"
+                                               Width="18" Height="18"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>

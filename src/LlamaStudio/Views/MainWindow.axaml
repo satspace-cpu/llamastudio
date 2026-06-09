@@ -1,0 +1,272 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LlamaStudio.ViewModels"
+        xmlns:views="using:LlamaStudio.Views.Pages"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        x:Class="LlamaStudio.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Llama Studio"
+        Icon="avares://LlamaStudio/Assets/app-icon.png"
+        Width="1400" Height="900"
+        MinWidth="1100" MinHeight="700"
+        Background="{DynamicResource ThemeSurface}">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <DockPanel>
+        <!-- Top bar -->
+      <Border DockPanel.Dock="Top"
+                 Background="{DynamicResource ThemeBackground}"
+                 Height="40"
+                 Margin="0,0,0,0"
+                 CornerRadius="8,8,0,0"
+                 Padding="16,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+               <Viewbox Width="22" Height="22">
+                    <Canvas Width="24" Height="24">
+                        <Path Data="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" Stroke="#7C3AED" StrokeThickness="1.5"/>
+                    </Canvas>
+                </Viewbox>
+                <TextBlock Text="Llama Studio"
+                            FontWeight="SemiBold"
+                            FontSize="16"
+                            Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource ThemeTextPrimary}"/>
+                <TextBlock Text="{Binding Subtitle}"
+                             Foreground="{DynamicResource ThemeTextSecondary}"
+                            FontSize="13"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"/>
+                <TextBlock Text="0.1.0"
+                            Foreground="{DynamicResource ThemeTextSecondary}"
+                           FontSize="11"
+                           Margin="8,0,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Sidebar + Content -->
+        <Grid DockPanel.Dock="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+         <Border Grid.Column="0"
+                      Background="{DynamicResource SidebarBackground}"
+                      Padding="8"
+                      CornerRadius="0,0,0,8"
+                      BorderBrush="{DynamicResource ThemeBorder}"
+                      BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4">
+<Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Dashboard"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Dashboard'}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Home" Width="18" Height="18"/>
+                                 <TextBlock Text="{Binding NavDashboard}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Chat button -->
+                        <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Chat"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Chat'}">
+                           <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Forum" Width="18" Height="18"/>
+                                 <TextBlock Text="{Binding NavChat}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Models"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Models'}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Cube" Width="18" Height="18"/>
+<TextBlock Text="{Binding NavModels}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Monitoring button -->
+                       <Button Command="{Binding NavigateCommand}"
+                                 CommandParameter="Monitoring"
+                                 Cursor="Hand"
+                                 HorizontalAlignment="Stretch"
+                                 HorizontalContentAlignment="Left"
+                                 Padding="12,10"
+                                 CornerRadius="8"
+                                 Foreground="{DynamicResource ThemeTextPrimary}"
+                                 Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Monitoring'}">
+                             <StackPanel Orientation="Horizontal" Spacing="10">
+                                 <materialIcons:MaterialIcon Kind="Speedometer" Width="18" Height="18"/>
+                                 <TextBlock Text="{Binding NavMonitoring}" VerticalAlignment="Center"/>
+                             </StackPanel>
+                         </Button>
+
+                        <!-- Llama Releases button -->
+                        <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="LlamaReleases"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='LlamaReleases'}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="PackageDown" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding NavLlamaReleases}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+<Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Server"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Server'}">
+                           <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Dns" Width="18" Height="18"/>
+                                 <TextBlock Text="{Binding NavServer}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Logs"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Logs'}">
+                         <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="FileDocument" Width="18" Height="18"/>
+                                 <TextBlock Text="{Binding NavLogs}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                       <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Settings"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Settings'}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Cog" Width="18" Height="18"/>
+              <TextBlock Text="{Binding NavSettings}" VerticalAlignment="Center"/>
+                             </StackPanel>
+                         </Button>
+
+                        <!-- Support button -->
+                        <Button Command="{Binding NavigateCommand}"
+                                CommandParameter="Support"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                Background="{Binding SelectedPage, Converter={StaticResource StringEqualBrushConverter}, ConverterParameter='Support'}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="AccountGroup" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding NavSupport}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+<Rectangle Height="1" Margin="4,12"
+                                      Fill="{DynamicResource ThemeBorder}"/>
+
+       <Button Command="{Binding StartServerCommand}"
+                                 IsEnabled="{Binding CanStartServer}"
+                                 HorizontalAlignment="Stretch"
+                                 HorizontalContentAlignment="Left"
+                                 Padding="12,14"
+                                 Background="{DynamicResource BtnSuccess}"
+                                 Foreground="{DynamicResource ThemeTextPrimary}"
+                                 CornerRadius="8"
+                                 Classes="accent">
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="PlayCircle" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding StartBtnText}" VerticalAlignment="Center"
+                                             Foreground="{DynamicResource ThemeTextPrimary}" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+      <Button Command="{Binding StopServerCommand}"
+                                 IsEnabled="{Binding CanStopServer}"
+                                 HorizontalAlignment="Stretch"
+                                 HorizontalContentAlignment="Left"
+                                 Padding="12,14"
+                                 Background="{DynamicResource BtnDanger}"
+                                 Foreground="{DynamicResource ThemeTextPrimary}"
+                                 CornerRadius="8">
+                         <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="StopCircle" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding StopBtnText}" VerticalAlignment="Center"
+                                            Foreground="{DynamicResource ThemeTextPrimary}" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding RestartServerCommand}"
+                                IsEnabled="{Binding CanRestartServer}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="12,14"
+                                Background="#D97706"
+                                Foreground="{DynamicResource ThemeTextPrimary}"
+                                CornerRadius="8">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding BtnRestartServer}" VerticalAlignment="Center"
+                                            Foreground="{DynamicResource ThemeTextPrimary}" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Content area -->
+        <Border Grid.Column="1"
+                      Background="{DynamicResource ThemeSurface}"
+                      CornerRadius="0,0,8,0"
+                      Margin="0,0,8,8"
+                      Padding="8">
+                <ContentControl Content="{Binding CurrentPage}"
+                                Margin="8"/>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

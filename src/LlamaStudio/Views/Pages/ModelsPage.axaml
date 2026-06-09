@@ -1,0 +1,326 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+          x:Class="LlamaStudio.Views.Pages.ModelsPage"
+             x:DataType="vm:ModelsViewModel"
+             x:Name="Root">
+
+    <DockPanel>
+       <!-- HuggingFace Section — Top, full width card style -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" CornerRadius="10"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                Margin="0,0,0,10" Padding="20">
+            <StackPanel Spacing="14">
+                <!-- Header -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="🤗" FontSize="20"/>
+                    <TextBlock Text="HuggingFace Download" FontSize="20" FontWeight="Bold"
+                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+                </StackPanel>
+
+                <!-- Row 1: Auth — token + buttons -->
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                    <TextBlock Grid.Column="0" Text="🔑" FontSize="16"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBox Grid.Column="1"
+                             Watermark="{Binding HfAuthTokenPlaceholder}"
+                             Text="{Binding HfAuthToken}"
+                             PasswordChar="*"
+                             Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}"
+                             Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,10"
+                             CornerRadius="8"/>
+                    <Button Grid.Column="2"
+                            Command="{Binding HfLoginCommand}"
+                            Content="{Binding HfLoginBtn}"
+                            Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                            Padding="16,10" CornerRadius="8" FontWeight="SemiBold"
+                            Margin="10,0,10,0"/>
+                    <Button Grid.Column="3"
+                            Command="{Binding HfSaveTokenCommand}"
+                            Content="💾 Save Token"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="16,10" CornerRadius="8" FontWeight="SemiBold"/>
+                </Grid>
+
+                <!-- Row 2: Repo URL + Fetch — full width input -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Column="0" Text="🌐" FontSize="16"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                  <TextBox Grid.Column="1"
+                               Watermark="{Binding HfUrlPlaceholder}"
+                               Text="{Binding HfUrl, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                               Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}"
+                               Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,10"
+                               CornerRadius="8" FontSize="14"/>
+                    <Button Grid.Column="2"
+                            Command="{Binding HfFetchRepoCommand}"
+                            IsEnabled="{Binding IsHfLoading, Converter={StaticResource InvertedBoolConverter}}"
+                            Content="{Binding IsHfLoading, Converter={StaticResource BoolToStringConverter}, ConverterParameter='⏳ Fetching...|🔍 Fetch Models'}"
+                            Background="#3B82F6" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="20,10" CornerRadius="8" FontWeight="SemiBold" FontSize="14"
+                            Margin="10,0,0,0"/>
+                </Grid>
+
+                <!-- Row 3: Directory selection -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Column="0" Text="📁" FontSize="16"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBox Grid.Column="1"
+                             Text="{Binding HfDownloadDir}"
+                             IsReadOnly="True"
+                             Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}"
+                             Foreground="{DynamicResource ThemeTextSecondary}" Padding="12,10"
+                             CornerRadius="8" FontSize="13"/>
+                    <Button Grid.Column="2"
+                            Command="{Binding HfBrowseDirectoryCommand}"
+                            Content="{Binding HfBrowseBtn}"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="16,10" CornerRadius="8" FontWeight="SemiBold"
+                            Margin="10,0,0,0"/>
+                </Grid>
+
+                <!-- Row 4: Status + Progress bar -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding HfStatus}"
+                               Foreground="{DynamicResource ThemeTextSecondary}" FontSize="13"/>
+                    <ProgressBar Value="{Binding HfOverallProgress}"
+                                 Maximum="100"
+                                 IsIndeterminate="{Binding IsHfLoading}"
+                                 Height="8" CornerRadius="4"
+                                 IsVisible="{Binding IsHfDownloading}"/>
+                </StackPanel>
+
+                <!-- Row 5: Separator -->
+                <Border Height="1" Background="#334155" CornerRadius="1"/>
+
+                <!-- Row 6: Files list — scrollable -->
+                <Border Background="{DynamicResource ThemeCard}" CornerRadius="8"
+                        BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                        MaxHeight="350">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding HfFiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="14,12"
+                                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,1,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
+                                            <!-- Row 0: Checkbox, Name+Size, Progress, StatusIcon, Info button -->
+                                           <ToggleSwitch Grid.Row="0" Grid.Column="0"
+                                                          IsChecked="{Binding IsSelected}"
+                                                          IsEnabled="{Binding IsDownloading, Converter={StaticResource InvertedBoolConverter}}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,14,0"/>
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,0,14,0">
+                                          <StackPanel Orientation="Horizontal" Spacing="10">
+                                                        <TextBlock Text="{Binding FileName}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource ThemeTextPrimary}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding SizeDisplay}"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                                    <TextBlock Text="{Binding Status}"
+                                                               FontSize="12"
+                                                               Foreground="#F59E0B"/>
+                                                </StackPanel>
+                                                <ProgressBar Value="{Binding DownloadProgress}"
+                                                             Maximum="100"
+                                                             Height="5" CornerRadius="3"
+                                                             IsVisible="{Binding IsDownloading}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                                       Text="{Binding ProgressText}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource ThemeTextSecondary}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="3"
+                                                       Text="{Binding StatusIcon}"
+                                                       FontSize="14"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0"/>
+                                            <Button Grid.Row="0" Grid.Column="4"
+                                                    Command="{Binding $parent[UserControl].DataContext.ShowHfFileDetailsCommand, ElementName=Root}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="ℹ"
+                                                    Background="{DynamicResource ThemeBorder}" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                    Width="28" Height="28"
+                                                    CornerRadius="6"
+                                                    FontSize="12" FontWeight="Bold"
+                                                    VerticalAlignment="Center"
+                                                    Cursor="Hand"/>
+                                            <!-- Row 1: Metadata panel (expanded) -->
+                                            <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4"
+                                                    Background="{DynamicResource ThemeCard}" CornerRadius="6"
+                                                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                                    Padding="12" Margin="0,8,0,0"
+                                                    IsVisible="{Binding ShowDetails}">
+                                                <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
+                                                    <StackPanel Spacing="4">
+                                                        <ItemsControl ItemsSource="{Binding Metadata}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                                                                        <TextBlock Grid.Column="0"
+                                                                                   Text="{Binding Key}"
+                                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                                   Foreground="{DynamicResource ThemeTextSecondary}"
+                                                                                   Width="200"/>
+                                                                        <TextBlock Grid.Column="1"
+                                                                                   Text="{Binding Value}"
+                                                                                   FontSize="11"
+                                                                                   Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="{Binding MetadataLoading}"
+                                                                   Foreground="{DynamicResource ThemeTextSecondary}" FontSize="11"
+                                                                   IsVisible="{Binding IsMetadataLoading}"/>
+                                                    </StackPanel>
+                                                </ScrollViewer>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Action buttons — bottom -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Command="{Binding HfSelectAllCommand}"
+                            Content="{Binding HfSelectAllBtn}"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="14,8" CornerRadius="8"/>
+                    <Button Command="{Binding HfDeselectAllCommand}"
+                            Content="{Binding HfDeselectAllBtn}"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="14,8" CornerRadius="8"/>
+                    <Button Command="{Binding HfDownloadSelectedCommand}"
+                            IsEnabled="{Binding IsHfDownloading, Converter={StaticResource InvertedBoolConverter}}"
+                            Content="{Binding HfDownloadSelectedBtn}"
+                            Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                            Padding="20,8" CornerRadius="8" FontWeight="SemiBold"/>
+                    <Button Command="{Binding HfCancelDownloadsCommand}"
+                            IsEnabled="{Binding IsHfDownloading}"
+                            Content="{Binding HfCancelBtn}"
+                            Background="{DynamicResource BtnDanger}" Foreground="{DynamicResource BadgeText}"
+                            Padding="20,8" CornerRadius="8" FontWeight="SemiBold"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" Padding="16"
+                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1" Margin="0,0,0,8">
+            <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"
+                                Foreground="{DynamicResource ThemeTextPrimary}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding FilteredCount}"
+                                Foreground="{DynamicResource ThemeTextSecondary}" FontSize="14"
+                                VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CountLabel}" Foreground="{DynamicResource ThemeTextSecondary}" FontSize="14"
+                                VerticalAlignment="Center"/>
+          <Button Command="{Binding ScanCommand}"
+                              IsEnabled="{Binding IsScanning, Converter={StaticResource InvertedBoolConverter}}"
+                              Content="{Binding IsScanning, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Scanning...|Scan Models'}"
+                            Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                             Padding="16,8" CornerRadius="8"/>
+                    <Button Command="{Binding SelectDirectoryCommand}"
+                            Content="{Binding BrowseBtn}"
+                            Background="{DynamicResource BtnSecondary}" Foreground="{DynamicResource ThemeTextPrimary}"
+                            Padding="12,8" CornerRadius="8"/>
+                </StackPanel>
+
+                <TextBox Watermark="{Binding SearchPlaceholder}"
+                          Text="{Binding SearchFilter}"
+                         Background="{DynamicResource ThemeCard}" BorderBrush="{DynamicResource ThemeBorder}"
+                         Foreground="{DynamicResource ThemeTextPrimary}" Padding="12,8"
+                         CornerRadius="8"/>
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <!-- Model List -->
+           <ListBox ItemsSource="{Binding Models}"
+                     SelectedItem="{Binding SelectedModel}"
+                     Background="Transparent" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource ThemeSurface}" CornerRadius="10"
+                                Margin="0,0,0,8" Padding="16"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <TextBlock Text="{Binding FileName}"
+                                               FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                    <Border Background="{DynamicResource BadgeMtp}" CornerRadius="6"
+                                            Padding="6,3">
+                                        <TextBlock Text="{Binding ModelType}"
+                                                   FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                    </Border>
+                                    <Border Background="{DynamicResource BadgeFlash}" CornerRadius="6"
+                                            Padding="6,3">
+                                        <TextBlock Text="{Binding QuantizationTag}"
+                                                   FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                    </Border>
+                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <TextBlock Text="{Binding Architecture}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                        <TextBlock Text="{Binding SizeBytes, Converter={StaticResource SizeFormatConverter}}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                        <TextBlock Text="{Binding ContextSize, StringFormat='{}ctx: {0}'}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                        <TextBlock Text="{Binding EstimatedVramGb, StringFormat='~{0:F1} GB VRAM'}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                        <TextBlock Text="{Binding BlockCount, StringFormat='{}{0} layers'}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                    </StackPanel>
+                               <!-- Buttons for vision/mmproj models -->
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0"
+                                            IsVisible="{Binding IsMmprojFile}">
+                                        <Button Command="{Binding DataContext.UseAsMmprojCommand, ElementName=Root}"
+                                                CommandParameter="{Binding}"
+                                                Content="{Binding DataContext.ToMmproj, ElementName=Root}"
+                                                Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                                Padding="12,6" CornerRadius="6"
+                                                IsVisible="{Binding IsServerMmprojConnected, Converter={StaticResource InvertedBoolConverter}}"/>
+                                        <Button Content="{Binding DataContext.Connected, ElementName=Root}"
+                                                Background="{DynamicResource ThemeBorder}" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                Padding="12,6" CornerRadius="6"
+                                                IsEnabled="False"
+                                                IsVisible="{Binding IsServerMmprojConnected}"/>
+                                    </StackPanel>
+                                <!-- Buttons for regular models -->
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0"
+                                            IsVisible="{Binding IsMmprojFile, Converter={StaticResource InvertedBoolConverter}}">
+                                        <Button Command="{Binding DataContext.UseInServerCommand, ElementName=Root}"
+                                                 CommandParameter="{Binding}"
+                                                 Content="{Binding DataContext.ToServerModel, ElementName=Root}"
+                                                 Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                                 Padding="12,6" CornerRadius="6"
+                                                 IsVisible="{Binding IsServerModelConnected, Converter={StaticResource InvertedBoolConverter}}"/>
+                                        <Button Content="{Binding DataContext.Connected, ElementName=Root}"
+                                                Background="{DynamicResource ThemeBorder}" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                Padding="12,6" CornerRadius="6"
+                                                IsEnabled="False"
+                                                IsVisible="{Binding IsServerModelConnected}"/>
+                                    </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+     <TextBlock Text="{Binding NoModelsText}"
+                        Foreground="{DynamicResource ThemeTextSecondary}" FontSize="16"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsVisible="{Binding FilteredCount, Converter={StaticResource EqualConverter}, ConverterParameter=0}"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

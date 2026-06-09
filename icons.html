@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Hermass Icons</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0C1222;
+            color: #E2E8F0;
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #94A3B8;
+            border-bottom: 1px solid #1E293B;
+            padding-bottom: 10px;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .icon-card {
+            background: #1E293B;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .icon-card svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 10px;
+        }
+        .icon-name {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        .color-blue { stroke: #60A5FA; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .color-green { stroke: #34D399; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .color-amber { stroke: #FBBF24; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .color-red { stroke: #F87171; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .color-white { fill: #E2E8F0; }
+        .color-purple { stroke: #A78BFA; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+</head>
+<body>
+    <h1>Hermass — Все иконки приложения</h1>
+
+    <div class="section">
+        <h2>📋 Меню слева (Sidebar)</h2>
+        <div class="icon-grid">
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <div class="icon-name">Главная (Dashboard)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <div class="icon-name">Чат (Chat)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <div class="icon-name">Модели (Models)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                <div class="icon-name">Сервер (Server)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <div class="icon-name">Логи (Logs)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                <div class="icon-name">Настройки (Settings)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🚀 Кнопки сервера</h2>
+        <div class="icon-grid">
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                <div class="icon-name">Старт (Play)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                <div class="icon-name">Стоп (Stop)</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-white"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <div class="icon-name">Перезапуск (Restart)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💬 Иконки чата (Action buttons)</h2>
+        <div class="icon-grid">
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-blue"><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2 M8 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 0h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/></svg>
+                <div class="icon-name">Копировать (Copy) #60A5FA</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-green"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <div class="icon-name">Редактировать (Edit) #34D399</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-amber"><path d="M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <div class="icon-name">Перегенерировать (Regenerate) #FBBF24</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-amber"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <div class="icon-name">Закладка (Bookmark) #FBBF24</div>
+            </div>
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-red"><path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/></svg>
+                <div class="icon-name">Удалить (Delete) #F87171</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💡 Рассуждения модели</h2>
+        <div class="icon-grid">
+            <div class="icon-card">
+                <svg viewBox="0 0 24 24" class="color-purple"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                <div class="icon-name">Рассуждение (Reasoning) #A78BFA</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

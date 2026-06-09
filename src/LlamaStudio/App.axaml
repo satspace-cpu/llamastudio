@@ -1,0 +1,144 @@
+<Application xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:local="using:LlamaStudio"
+              xmlns:converters="using:LlamaStudio.Converters"
+              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+              x:Class="LlamaStudio.App">
+    <Application.Resources>
+        <!-- Theme-aware colors (Dark by default) -->
+        <SolidColorBrush x:Key="ThemeBackground" Color="#F5F5F5"/>
+        <SolidColorBrush x:Key="ThemeSurface" Color="#FAFAFA"/>
+        <SolidColorBrush x:Key="ThemeCard" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeTextPrimary" Color="#1F2328"/>
+        <SolidColorBrush x:Key="ThemeTextSecondary" Color="#656D76"/>
+        <SolidColorBrush x:Key="ThemeTextTertiary" Color="#8B949E"/>
+        <SolidColorBrush x:Key="ThemeBorder" Color="#D0D7DE"/>
+        <SolidColorBrush x:Key="ThemeBorderStrong" Color="#C9D1D9"/>
+        <SolidColorBrush x:Key="ThemeInputBackground" Color="#F6F8FA"/>
+        <SolidColorBrush x:Key="ThemeAccent" Color="#2F81F7"/>
+        <SolidColorBrush x:Key="ThemeAccentHover" Color="#1A7FCA"/>
+        <SolidColorBrush x:Key="CardServerBackground" Color="#1E1B4B"/>
+        <SolidColorBrush x:Key="CardModelsBackground" Color="#064E3B"/>
+        <SolidColorBrush x:Key="CardProfilesBackground" Color="#7C2D12"/>
+        <SolidColorBrush x:Key="CardVersionBackground" Color="#1E3A5F"/>
+        <SolidColorBrush x:Key="CardModelBackground" Color="#172554"/>
+        <SolidColorBrush x:Key="CardSectionBackground" Color="#1F1533"/>
+        <SolidColorBrush x:Key="CardServerAccent" Color="#6366F1"/>
+        <SolidColorBrush x:Key="CardModelsAccent" Color="#10B981"/>
+        <SolidColorBrush x:Key="CardProfilesAccent" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="CardVersionAccent" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="CardModelAccent" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="CardServerLabel" Color="#818CF8"/>
+        <SolidColorBrush x:Key="CardModelsLabel" Color="#34D399"/>
+        <SolidColorBrush x:Key="CardProfilesLabel" Color="#FDBA74"/>
+        <SolidColorBrush x:Key="CardVersionLabel" Color="#60A5FA"/>
+        <SolidColorBrush x:Key="CardModelLabel" Color="#60A5FA"/>
+        <SolidColorBrush x:Key="CardSubText" Color="#A5B4FC"/>
+        <SolidColorBrush x:Key="GpuMonitorBackground" Color="#1F1533"/>
+        <SolidColorBrush x:Key="GpuMonitorInner" Color="#2D1B69"/>
+        <SolidColorBrush x:Key="GpuMonitorHeader" Color="#A78BFA"/>
+        <SolidColorBrush x:Key="ProgressTrack" Color="#2D1B69"/>
+        <SolidColorBrush x:Key="ProgressVram" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="ProgressCore" Color="#10B981"/>
+        <SolidColorBrush x:Key="ProgressPower" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="ProgressFan" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="ProgressRam" Color="#10B981"/>
+        <SolidColorBrush x:Key="SidebarBackground" Color="#F0F0F0"/>
+        <SolidColorBrush x:Key="SidebarItemBackground" Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="SidebarItemSelected" Color="#D4D4D4"/>
+        <SolidColorBrush x:Key="SidebarItemText" Color="#57606A"/>
+        <SolidColorBrush x:Key="SidebarItemTextSelected" Color="#1F2328"/>
+        <SolidColorBrush x:Key="TabItemBackground" Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="TabItemText" Color="#57606A"/>
+        <SolidColorBrush x:Key="TabItemSelectedBackground" Color="#2F81F7"/>
+        <SolidColorBrush x:Key="TabItemSelectedText" Color="White"/>
+        <SolidColorBrush x:Key="TabItemHoverBackground" Color="#D4D4D4"/>
+        <SolidColorBrush x:Key="ProfileInnerBackground" Color="#F6F8FA"/>
+        <SolidColorBrush x:Key="ProfileModelBackground" Color="#F6F8FA"/>
+        <SolidColorBrush x:Key="BadgeMtp" Color="#7C3AED"/>
+        <SolidColorBrush x:Key="BadgeReasoning" Color="#059669"/>
+        <SolidColorBrush x:Key="BadgeFlash" Color="#2563EB"/>
+        <SolidColorBrush x:Key="BadgeCache" Color="#D97706"/>
+        <SolidColorBrush x:Key="BadgeBatching" Color="#0891B2"/>
+        <SolidColorBrush x:Key="BadgeText" Color="White"/>
+        <SolidColorBrush x:Key="ServerBannerBackground" Color="#1E1B4B"/>
+        <SolidColorBrush x:Key="ServerBannerLabel" Color="#818CF8"/>
+        <SolidColorBrush x:Key="ServerBannerSub" Color="#64748B"/>
+        <SolidColorBrush x:Key="SectionTitle" Color="White"/>
+        <SolidColorBrush x:Key="SectionLabel" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="SectionLabelLight" Color="#64748B"/>
+        <SolidColorBrush x:Key="BtnPrimary" Color="#4338CA"/>
+        <SolidColorBrush x:Key="BtnSuccess" Color="#059669"/>
+        <SolidColorBrush x:Key="BtnDanger" Color="#DC2626"/>
+        <SolidColorBrush x:Key="BtnSecondary" Color="#475569"/>
+        <SolidColorBrush x:Key="BtnPurple" Color="#7C3AED"/>
+        <SolidColorBrush x:Key="BtnCyan" Color="#0891B2"/>
+
+        <converters:EqualConverter x:Key="EqualConverter" />
+        <converters:BoolToStringConverter x:Key="BoolToStringConverter" />
+        <converters:GreaterThanConverter x:Key="GreaterThanConverter" />
+        <converters:NotNullConverter x:Key="NotNullConverter" />
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <converters:NotEqualConverter x:Key="NotEqualConverter" />
+        <converters:StringEqualBrushConverter x:Key="StringEqualBrushConverter" />
+        <converters:SizeFormatConverter x:Key="SizeFormatConverter" />
+        <converters:LogLevelBrushConverter x:Key="LogLevelBrushConverter" />
+        <converters:BuildTypeToBrushConverter x:Key="BuildTypeToBrushConverter" />
+        <converters:ContainsConverter x:Key="ContainsConverter" />
+        <converters:NotContainsConverter x:Key="NotContainsConverter" />
+        <converters:ChatRoleToBrushConverter x:Key="ChatRoleToBrushConverter" />
+        <converters:ChatRoleToInitialConverter x:Key="ChatRoleToInitialConverter" />
+        <converters:ChatRoleToNameConverter x:Key="ChatRoleToNameConverter" />
+        <converters:ChatRoleTextBrushConverter x:Key="ChatRoleTextBrushConverter" />
+        <converters:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <converters:ServerConnectionStatusConverter x:Key="ServerConnectionStatusConverter" />
+        <converters:ServerStateBrushConverter x:Key="ServerStateBrushConverter" />
+        <converters:HasItemsVisibilityConverter x:Key="HasItemsVisibilityConverter" />
+        <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
+        <converters:McpTransportToVisibilityConverter x:Key="McpTransportToVisibilityConverter" />
+        <converters:McpConnectedToBrushConverter x:Key="McpConnectedToBrushConverter" />
+        <converters:BookmarkBrushConverter x:Key="BookmarkBrushConverter" />
+        <converters:BookmarkTooltipConverter x:Key="BookmarkTooltipConverter" />
+        <converters:ChatRoleToVisibilityConverter x:Key="ChatRoleToVisibilityConverter" />
+        <converters:ReasoningVisibilityConverter x:Key="ReasoningVisibilityConverter" />
+        <converters:ToolResultLengthConverter x:Key="ToolResultLengthConverter" />
+        <converters:ReasoningChevronConverter x:Key="ReasoningChevronConverter" />
+        <converters:McpChipBgConverter x:Key="McpChipBgConverter" />
+        <converters:McpChipFgConverter x:Key="McpChipFgConverter" />
+        <converters:McpChipOpacityConverter x:Key="McpChipOpacityConverter" />
+        <converters:McpToggleBgConverter x:Key="McpToggleBgConverter" />
+        <converters:McpToggleFgConverter x:Key="McpToggleFgConverter" />
+        <converters:ContextProgressBarColorConverter x:Key="ContextProgressBarColorConverter" />
+        <converters:SessionSelectedBgConverter x:Key="SessionSelectedBgConverter" />
+
+        <!-- Chat icon colors -->
+        <SolidColorBrush x:Key="IconCopy" Color="#60A5FA"/>
+        <SolidColorBrush x:Key="IconEdit" Color="#34D399"/>
+        <SolidColorBrush x:Key="IconRegenerate" Color="#FBBF24"/>
+        <SolidColorBrush x:Key="IconDelete" Color="#F87171"/>
+    </Application.Resources>
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+        <materialIcons:MaterialIconStyles />
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI, Arial, sans-serif" />
+        </Style>
+        
+        <!-- ListBoxItem selection for chat sessions -->
+        <Style Selector="ListBox > ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="ListBox > ListBoxItem:selected">
+            <Setter Property="Background" Value="{DynamicResource ThemeInputBackground}"/>
+        </Style>
+        <Style Selector="ListBox > ListBoxItem:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ThemeInputBackground}"/>
+        </Style>
+    </Application.Styles>
+</Application>

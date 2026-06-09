@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LlamaStudio.ViewModels"
+             x:Class="LlamaStudio.Views.Pages.LlamaReleasesPage"
+             x:DataType="vm:LlamaReleasesViewModel"
+             x:Name="Root">
+    <Grid RowDefinitions="Auto, *" Margin="20">
+        <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,0,0,20"/>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*, 20, *">
+            <!-- Left: Available Releases -->
+            <Border Grid.Column="0" Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Spacing="12">
+                        <TextBlock Text="{Binding ReleasesSection}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Command="{Binding CheckForUpdatesCommand}"
+                                    IsEnabled="{Binding IsCheckingUpdates, Converter={StaticResource InvertedBoolConverter}}"
+                                    Content="{Binding IsCheckingUpdates, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Checking...|Check for Updates'}"
+                                    Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                                    Padding="16,8" CornerRadius="8"/>
+                            <TextBlock Text="{Binding UpdateStatus}"
+                                       FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <ProgressBar Value="{Binding DownloadProgress}" Maximum="100"
+                                     Height="6" CornerRadius="3"
+                                     Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource ThemeAccent}"
+                                     IsVisible="{Binding DownloadProgress, Converter={StaticResource GreaterThanConverter}, ConverterParameter=0}"/>
+                        <TextBlock Text="{Binding DownloadStatus}"
+                                   FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
+                                   IsVisible="{Binding DownloadStatus, Converter={StaticResource NotNullConverter}}"/>
+                    </StackPanel>
+
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding ReleaseBuildCards}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="14"
+                                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                        <StackPanel Spacing="6">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ReleaseTag}"
+                                                           FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                <TextBlock Text="{Binding ReleaseDate, StringFormat='{}{0:yyyy-MM-dd}'}"
+                                                           FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                           VerticalAlignment="Center"/>
+                                                <Border CornerRadius="4" Padding="6,3">
+                                                    <Border.Background>
+                                                        <Binding Path="BuildType" Converter="{StaticResource BuildTypeToBrushConverter}"/>
+                                                    </Border.Background>
+                                                    <TextBlock Text="{Binding BuildDescription}"
+                                                               FontSize="11" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding SizeDisplay}"
+                                                           FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="PRE"
+                                                           FontSize="9" FontWeight="SemiBold"
+                                                           Foreground="#EF4444"
+                                                           VerticalAlignment="Center"
+                                                           IsVisible="{Binding IsPrerelease}"/>
+
+                                                  <Button Command="{Binding DataContext.InstallBuildCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="{Binding InstallBtnText}"
+                                                        Background="{DynamicResource BtnSuccess}" Foreground="{DynamicResource BadgeText}"
+                                                        Padding="12,5" CornerRadius="6"
+                                                        HorizontalAlignment="Right"
+                                                        IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertedBoolConverter}}"
+                                                        ToolTip.Tip="{Binding DataContext.TtInstallBuild, ElementName=Root}"/>
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding AssetName}"
+                                                       FontSize="12" FontWeight="Medium"
+                                                       Foreground="{DynamicResource ThemeTextSecondary}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Right: Installed Versions -->
+            <Border Grid.Column="2" Background="{DynamicResource ThemeSurface}" CornerRadius="12" Padding="20"
+                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="{Binding InstalledVersionsTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource SectionTitle}"/>
+                            <TextBlock Text="{Binding ActiveVersion}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding InstalledVersionItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:InstalledVersionItem">
+                                    <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="14"
+                                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
+                                        <StackPanel Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Version}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                
+                                                <Border CornerRadius="4" Padding="8,4">
+                                                    <Border.Background>
+                                                        <Binding Path="BuildType" Converter="{StaticResource BuildTypeToBrushConverter}"/>
+                                                    </Border.Background>
+                                                    <TextBlock Text="{Binding Description, TargetNullValue=Unknown, FallbackValue=Unknown}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                                                </Border>
+
+                                                <Border CornerRadius="4" Padding="8,4" Background="{DynamicResource BadgeReasoning}" IsVisible="{Binding IsActive}">
+                                                    <TextBlock Text="{Binding DataContext.ActiveBadge, ElementName=Root}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BadgeText}"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button Command="{Binding DataContext.SwitchVersionCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="{Binding DataContext.UseBtn, ElementName=Root}" Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                                                        Padding="16,6" CornerRadius="6" HorizontalAlignment="Left"
+                                                        IsVisible="{Binding IsActive, Converter={StaticResource InvertedBoolConverter}}"/>
+                                                <Button Command="{Binding DataContext.UninstallVersionCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="{Binding DataContext.RemoveBtn, ElementName=Root}" Background="{DynamicResource BtnDanger}" Foreground="{DynamicResource BadgeText}"
+                                                        Padding="16,6" CornerRadius="6" HorizontalAlignment="Left"
+                                                        IsVisible="{Binding IsActive, Converter={StaticResource InvertedBoolConverter}}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
