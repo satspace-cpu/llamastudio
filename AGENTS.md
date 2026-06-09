@@ -329,6 +329,12 @@ dotnet build src/Llama Studio/Llama Studio.csproj
 dotnet run --project src/Llama Studio/Llama Studio.csproj
 ```
 
+### Папка разработки
+**Активная папка сборки (Debug):** `L:\1c_modul\hermass\src\LlamaStudio\bin\Debug\net8.0`
+- Эта папка используется для разработки и тестирования.
+- При запуске из IDE (Visual Studio / Rider) файлы собираются сюда.
+- **Важно:** не удаляйте эту папку — она содержит скомпилированные DLL и зависимости для отладки.
+
 ### Правила для AI ассистента
 1. Всегда используй `replace_in_file` для малых изменений, `write_to_file` только для новых файлов.
 2. После изменений кода — всегда делай `dotnet build` для проверки.
