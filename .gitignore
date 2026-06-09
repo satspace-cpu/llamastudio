@@ -40,3 +40,8 @@ publish/
 *.log
 *_backup_*.zip
 backup_*/
+
+# Internal dev files
+AGENTS.md
+CONTEXT.md
+TELEGRAM_SETUP.md
