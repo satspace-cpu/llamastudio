@@ -5,6 +5,7 @@ using LlamaStudio.Core.Models;
 using LlamaStudio.Views.Pages;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using System.Reflection;
 
 namespace LlamaStudio.ViewModels;
 
@@ -54,6 +55,7 @@ public partial class MainViewModel : ObservableObject
     public string BtnStopServer => _loc.T("main.stop_server");
     public string BtnRestartServer => _loc.T("main.restart_server");
     public string Subtitle => _loc.T("main.subtitle");
+    public string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 
     public MainViewModel(
         IServerManager serverManager,
