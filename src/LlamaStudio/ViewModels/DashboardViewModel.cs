@@ -544,10 +544,30 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _serverManager.StatusChanged += (s, status) => ServerStatus = status;
         _loc.OnLanguageChanged += OnLanguageChanged;
 
-        // Auto-check for app updates on startup if enabled
+        // Auto-check for app updates on startup (non-blocking, fire-and-forget)
         if (_settings.AutoCheckUpdates)
         {
-            _ = CheckAppUpdatesAsync();
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000); // Delay to not block startup
+                try
+                {
+                    var update = await _appUpdater.CheckForUpdatesAsync();
+                    if (update != null)
+                    {
+                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            HasAppUpdate = true;
+                            AppLatestVersion = update.Version;
+                        });
+                        _log.Information($"App update available: {update.Version}", "Dashboard");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.Warning($"App update check skipped: {ex.Message}", "Dashboard");
+                }
+            });
         }
     }
 

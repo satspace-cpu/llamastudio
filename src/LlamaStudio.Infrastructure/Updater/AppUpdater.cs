@@ -35,7 +35,7 @@ public class AppUpdater : IAppUpdater
             _log.Information("Checking for LlamaStudio updates on GitHub...", "AppUpdater");
 
             var releases = await _httpClient.GetFromJsonAsync<List<GithubRelease>>(
-                "https://api.github.com/repos/satspace-cpu/llamastudio/releases?per_page=5", ct);
+                "https://api.github.com/repos/satspace-cpu/llamastudio/releases", ct);
 
             if (releases == null || releases.Count == 0)
             {
