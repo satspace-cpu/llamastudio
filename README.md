@@ -14,81 +14,70 @@
 
 ## 📸 Скриншоты
 
-**Главная (Dashboard)**
-![Dashboard](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/dashboard.png)
-*Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.*
+<figure>
+<img src="screenshots/dashboard.png" width="900">
+<figcaption><strong>Главная (Dashboard)</strong> — Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/chat.png" width="900">
+<figcaption><strong>Чат</strong> — Встроенный чат с AI, поддержка MCP инструментов.</figcaption>
+</figure>
 
-**Чат**
-![Chat](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/chat.png)
-*Встроенный чат с AI, поддержка MCP инструментов.*
+<figure>
+<img src="screenshots/models.png" width="900">
+<figcaption><strong>Модели</strong> — Список найденных моделей, загрузка с HuggingFace, контекстное меню.</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/monitoring.png" width="900">
+<figcaption><strong>Мониторинг</strong> — Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.</figcaption>
+</figure>
 
-**Модели**
-![Models](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/models.png)
-*Список найденных моделей, загрузка с HuggingFace, контекстное меню.*
+<figure>
+<img src="screenshots/releases.png" width="900">
+<figcaption><strong>Релизы llama.cpp</strong> — Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/server-model.png" width="900">
+<figcaption><strong>Сервер (Модель)</strong> — Выбор основной модели, mmproj (зрение), черновой модели.</figcaption>
+</figure>
 
-**Мониторинг**
-![Monitoring](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/monitoring.png)
-*Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.*
+<figure>
+<img src="screenshots/server-gpu.png" width="900">
+<figcaption><strong>Сервер (GPU)</strong> — Слои GPU, потоки, Flash Attention, кэш.</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/server-context.png" width="900">
+<figcaption><strong>Сервер (Контекст и сэмплинг)</strong> — Размер контекста, температура, Top-P/K.</figcaption>
+</figure>
 
-**Релизы llama.cpp**
-![Releases](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/releases.png)
-*Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).*
+<figure>
+<img src="screenshots/server-advanced.png" width="900">
+<figcaption><strong>Сервер (Продвинутое)</strong> — MTP, спекулятивное декодирование, YARN/Rope.</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/logs.png" width="900">
+<figcaption><strong>Логи</strong> — Вывод логов сервера в реальном времени.</figcaption>
+</figure>
 
-**Сервер (Модель)**
-![Server Model](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/server-model.png)
-*Выбор основной модели, mmproj (зрение), черновой модели.*
+<figure>
+<img src="screenshots/settings.png" width="900">
+<figcaption><strong>Настройки</strong> — Язык, пути, тема, сворачивание в трей, автозапуск.</figcaption>
+</figure>
 
----
+<figure>
+<img src="screenshots/support.png" width="900">
+<figcaption><strong>Обсуждение и поддержка</strong> — Ссылка на Telegram канал, вдохновитель проекта.</figcaption>
+</figure>
 
-**Сервер (GPU)**
-![Server GPU](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/server-gpu.png)
-*Слои GPU, потоки, Flash Attention, кэш.*
-
----
-
-**Сервер (Контекст и сэмплинг)**
-![Server Context](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/server-context.png)
-*Размер контекста, температура, Top-P/K.*
-
----
-
-**Сервер (Продвинутое)**
-![Server Advanced](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/server-advanced.png)
-*MTP, спекулятивное декодирование, YARN/Rope.*
-
----
-
-**Логи**
-![Logs](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/logs.png)
-*Вывод логов сервера в реальном времени.*
-
----
-
-**Настройки**
-![Settings](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/settings.png)
-*Язык, пути, тема, сворачивание в трей, автозапуск.*
-
----
-
-**Обсуждение и поддержка**
-![Support](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/support.png)
-*Ссылка на Telegram канал, вдохновитель проекта.*
-
----
-
-**Плавающее окно мониторинга**
-![Floating Window](https://raw.githubusercontent.com/satspace-cpu/llamastudio/main/screenshots/floating-window.png)
-*Компактный мониторинг поверх других окон.*
+<figure>
+<img src="screenshots/floating-window.png" width="900">
+<figcaption><strong>Плавающее окно мониторинга</strong> — Компактный мониторинг поверх других окон.</figcaption>
+</figure>
 
 ## 🚀 Установка
 
