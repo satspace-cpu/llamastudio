@@ -1,6 +1,6 @@
 {
-  "version": "1.1.1",
-  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.1/LlamaStudio.exe",
-  "changelog": "Что нового:\n- Полностью переработан механизм обновлений приложения.\n- Переход на GitHub Contents API для проверки обновлений (убраны проблемы с кэшированием).\n- Улучшен скрипт перезапуска при обновлении.\n- Исправлена проблема с обнаружением обновлений.\n- Добавлено детальное логирование процесса обновлений.",
-  "publishedAt": "2026-06-09T20:00:00Z"
+  "version": "1.1.2",
+  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.2/LlamaStudio.exe",
+  "changelog": "Тестовая версия для проверки механизма обновлений.",
+  "publishedAt": "2026-06-09T21:00:00Z"
 }
