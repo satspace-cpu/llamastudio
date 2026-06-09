@@ -14,70 +14,70 @@
 
 ## 📸 Скриншоты
 
-<figure>
-<img src="screenshots/dashboard.png" width="900">
-<figcaption><strong>Главная (Dashboard)</strong> — Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.</figcaption>
-</figure>
+**Главная (Dashboard)**
+*Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.*
 
-<figure>
-<img src="screenshots/chat.png" width="900">
-<figcaption><strong>Чат</strong> — Встроенный чат с AI, поддержка MCP инструментов.</figcaption>
-</figure>
+![Dashboard](screenshots/dashboard.png)
 
-<figure>
-<img src="screenshots/models.png" width="900">
-<figcaption><strong>Модели</strong> — Список найденных моделей, загрузка с HuggingFace, контекстное меню.</figcaption>
-</figure>
+**Чат**
+*Встроенный чат с AI, поддержка MCP инструментов.*
 
-<figure>
-<img src="screenshots/monitoring.png" width="900">
-<figcaption><strong>Мониторинг</strong> — Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.</figcaption>
-</figure>
+![Chat](screenshots/chat.png)
 
-<figure>
-<img src="screenshots/releases.png" width="900">
-<figcaption><strong>Релизы llama.cpp</strong> — Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).</figcaption>
-</figure>
+**Модели**
+*Список найденных моделей, загрузка с HuggingFace, контекстное меню.*
 
-<figure>
-<img src="screenshots/server-model.png" width="900">
-<figcaption><strong>Сервер (Модель)</strong> — Выбор основной модели, mmproj (зрение), черновой модели.</figcaption>
-</figure>
+![Models](screenshots/models.png)
 
-<figure>
-<img src="screenshots/server-gpu.png" width="900">
-<figcaption><strong>Сервер (GPU)</strong> — Слои GPU, потоки, Flash Attention, кэш.</figcaption>
-</figure>
+**Мониторинг**
+*Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.*
 
-<figure>
-<img src="screenshots/server-context.png" width="900">
-<figcaption><strong>Сервер (Контекст и сэмплинг)</strong> — Размер контекста, температура, Top-P/K.</figcaption>
-</figure>
+![Monitoring](screenshots/monitoring.png)
 
-<figure>
-<img src="screenshots/server-advanced.png" width="900">
-<figcaption><strong>Сервер (Продвинутое)</strong> — MTP, спекулятивное декодирование, YARN/Rope.</figcaption>
-</figure>
+**Релизы llama.cpp**
+*Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).*
 
-<figure>
-<img src="screenshots/logs.png" width="900">
-<figcaption><strong>Логи</strong> — Вывод логов сервера в реальном времени.</figcaption>
-</figure>
+![Releases](screenshots/releases.png)
 
-<figure>
-<img src="screenshots/settings.png" width="900">
-<figcaption><strong>Настройки</strong> — Язык, пути, тема, сворачивание в трей, автозапуск.</figcaption>
-</figure>
+**Сервер (Модель)**
+*Выбор основной модели, mmproj (зрение), черновой модели.*
 
-<figure>
-<img src="screenshots/support.png" width="900">
-<figcaption><strong>Обсуждение и поддержка</strong> — Ссылка на Telegram канал, вдохновитель проекта.</figcaption>
-</figure>
+![Server Model](screenshots/server-model.png)
 
-<figure>
-<img src="screenshots/floating-window.png" width="900">
-<figcaption><strong>Плавающее окно мониторинга</strong> — Компактный мониторинг поверх других окон.</figcaption>
-</figure>
+**Сервер (GPU)**
+*Слои GPU, потоки, Flash Attention, кэш.*
+
+![Server GPU](screenshots/server-gpu.png)
+
+**Сервер (Контекст и сэмплинг)**
+*Размер контекста, температура, Top-P/K.*
+
+![Server Context](screenshots/server-context.png)
+
+**Сервер (Продвинутое)**
+*MTP, спекулятивное декодирование, YARN/Rope.*
+
+![Server Advanced](screenshots/server-advanced.png)
+
+**Логи**
+*Вывод логов сервера в реальном времени.*
+
+![Logs](screenshots/logs.png)
+
+**Настройки**
+*Язык, пути, тема, сворачивание в трей, автозапуск.*
+
+![Settings](screenshots/settings.png)
+
+**Обсуждение и поддержка**
+*Ссылка на Telegram канал, вдохновитель проекта.*
+
+![Support](screenshots/support.png)
+
+**Плавающее окно мониторинга**
+*Компактный мониторинг поверх других окон.*
+
+![Floating Window](screenshots/floating-window.png)
 
 ## 🚀 Установка
 
