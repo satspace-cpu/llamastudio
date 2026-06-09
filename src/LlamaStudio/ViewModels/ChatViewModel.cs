@@ -175,6 +175,7 @@ public partial class ChatViewModel : ObservableObject
     public string McpToolsCount => _loc.T("chat.tools_count");
     public string ChatWelcome => _loc.T("chat.welcome");
     public string ChatWelcomeSub => _loc.T("chat.welcome_sub");
+    public string ExperimentalWarning => _loc.T("chat.experimental");
     public string ChatStreaming => _loc.T("chat.streaming");
     public string ChatInputWatermark => _loc.T("chat.input_watermark");
     public string ChatCut => _loc.T("chat.cut");
@@ -356,6 +357,7 @@ public partial class ChatViewModel : ObservableObject
             OnPropertyChanged(nameof(McpToolsCount));
             OnPropertyChanged(nameof(ChatWelcome));
             OnPropertyChanged(nameof(ChatWelcomeSub));
+            OnPropertyChanged(nameof(ExperimentalWarning));
             OnPropertyChanged(nameof(ChatStreaming));
             OnPropertyChanged(nameof(ChatInputWatermark));
             OnPropertyChanged(nameof(ChatCut));

@@ -154,6 +154,7 @@ public class LocalizationService : ILocalizationService
         ["chat.mcp_url"] = new() { ["en"] = "URL:", ["ru"] = "URL:" },
         ["chat.mcp_add"] = new() { ["en"] = "Add", ["ru"] = "Добавить" },
         ["chat.tools_count"] = new() { ["en"] = "tools", ["ru"] = "инструментов" },
+        ["chat.experimental"] = new() { ["en"] = "⚠ Experimental feature — errors may occur. The chat is still being refined.", ["ru"] = "⚠ Экспериментальная функция — возможны ошибки. Чат находится в стадии доработки." },
         ["chat.welcome"] = new() { ["en"] = "Hello!", ["ru"] = "Привет!" },
         ["chat.welcome_sub"] = new() { ["en"] = "Enter a message or load files to get started", ["ru"] = "Введите сообщение или загрузите файлы, чтобы начать работу" },
         ["chat.streaming"] = new() { ["en"] = "(running...)", ["ru"] = "(выполняется...)" },

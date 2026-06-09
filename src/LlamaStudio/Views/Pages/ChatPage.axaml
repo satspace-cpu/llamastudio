@@ -65,18 +65,23 @@ x:Class="LlamaStudio.Views.Pages.ChatPage"
 
     <DockPanel Background="{DynamicResource ThemeBackground}">
         <!-- Top bar — connection status only -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" Padding="12,6"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ThemeSurface}" Padding="12,8"
                 BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <Ellipse Width="8" Height="8" Fill="{Binding ServerState, Converter={StaticResource ServerStateBrushConverter}}"/>
-                <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}">
-                    <TextBlock.Text>
-                        <MultiBinding Converter="{StaticResource ServerConnectionStatusConverter}">
-                            <Binding Path="ServerState"/>
-                            <Binding Path="ServerModelName"/>
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
+            <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Ellipse Width="8" Height="8" Fill="{Binding ServerState, Converter={StaticResource ServerStateBrushConverter}}"/>
+                    <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource ServerConnectionStatusConverter}">
+                                <Binding Path="ServerState"/>
+                                <Binding Path="ServerModelName"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+                <TextBlock Text="⚠ Чат находится в разработке, возможны ошибки" 
+                           FontSize="13" FontWeight="Medium" Foreground="#FBBF24" 
+                           HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
 
@@ -261,10 +266,10 @@ x:Class="LlamaStudio.Views.Pages.ChatPage"
                 </DockPanel>
             </Border>
 
-            <!-- Main chat area -->
+          <!-- Main chat area -->
             <Grid Grid.Column="1" RowDefinitions="*,Auto" Background="{DynamicResource ThemeBackground}">
                <!-- Messages area -->
-                 <ScrollViewer Grid.Row="0" x:Name="MessagesScroll" x:FieldModifier="public"
+                <ScrollViewer Grid.Row="0" x:Name="MessagesScroll" x:FieldModifier="public"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Disabled"
                                  PointerWheelChanged="MessagesScrollPointerWheelChanged"
