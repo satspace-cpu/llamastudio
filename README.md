@@ -2,6 +2,53 @@
 
 **Llama Studio** — это удобное десктопное приложение для управления локальными AI-моделями (llama.cpp) на Windows. Позволяет запускать сервер, управлять профилями, мониторить GPU и общаться с моделями через встроенный чат.
 
+## 🛠 О разработке
+
+> 💡 **Этот проект разработан полностью локально** — без привлечения облачных AI-сервисов (ChatGPT, Claude и др.). Весь код написан с помощью локальной модели Qwen3.6-27B через AI-ассистент OpenCode.
+
+| Параметр | Значение |
+|----------|---------|
+| 💻 **Платформа** | Windows 11 (x64) |
+| 🧠 **AI-ассистент** | [OpenCode](https://opencode.ai) — интерактивный CLI для разработки |
+| 🤖 **Основная модель** | `Qwen3.6-27B-UD-Q5_K_XL.gguf` (27B параметров, Q5 квантование) |
+| 👁 **Модель зрения** | `mmproj-F32.gguf` (мультимодальный проектор) |
+| 🎮 **Видеокарта** | NVIDIA GeForce RTX 5090 (32 ГБ VRAM) |
+| 💾 **Оперативная память** | 64 ГБ DDR5 |
+| ⚡ **Сборка llama.cpp** | b9570-cuda12x (CUDA 12) |
+| 📦 **Фреймворк** | Avalonia UI + .NET 8 (C#) |
+| 🏗 **Архитектура** | Clean Architecture (UI → Core ← Infrastructure) |
+
+### ⚙️ Параметры запуска llama-server (использовались при разработке)
+
+```
+-m "Qwen3.6-27B-UD-Q5_K_XL.gguf"
+--mmproj "mmproj-F32.gguf"
+-ngl all
+--threads -1
+-fa on
+--mmap
+-c 150000
+--batch 2048
+--ubatch 512
+--cache-type-k q8_0
+--cache-type-v q8_0
+--cache-ram 24000
+--cache-reuse 256
+--temp 0.3
+--top-p 0.95
+--top-k 40
+--min-p 0.05
+--repeat-penalty 1.05
+--spec-type draft-mtp
+--spec-draft-n-max 3
+--spec-draft-p-split 0.1
+--verbose
+--ui
+--host 0.0.0.0
+--port 8080
+--timeout 3600
+```
+
 ## ✨ Возможности
 
 *   **Управление сервером:** Запуск, остановка и перезагрузка `llama-server` в один клик.
