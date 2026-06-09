@@ -59,6 +59,11 @@
 
 ![Server Advanced](screenshots/server-advanced.png)
 
+**Сервер (Подключение)**
+*Host, Port, Timeout, Slots для подключения к серверу.*
+
+![Server Connect](screenshots/server-connect.png)
+
 **Логи**
 *Вывод логов сервера в реальном времени.*
 
