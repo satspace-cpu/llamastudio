@@ -14,24 +14,57 @@
 
 ## 📸 Скриншоты
 
-<div align="center">
-
-**Главный экран (Dashboard)**
+### Главная (Dashboard)
 ![Dashboard](screenshots/dashboard.png)
+*Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.*
 
-**Настройки сервера**
-![Server Settings](screenshots/server.png)
-
-**Управление моделями**
-![Models](screenshots/models.png)
-
-**Чат с AI**
+### Чат
 ![Chat](screenshots/chat.png)
+*Встроенный чат с AI, поддержка MCP инструментов.*
 
-**Мониторинг GPU**
+### Модели
+![Models](screenshots/models.png)
+*Список найденных моделей, загрузка с HuggingFace, контекстное меню.*
+
+### Мониторинг
 ![Monitoring](screenshots/monitoring.png)
+*Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.*
 
-</div>
+### Релизы llama.cpp
+![Releases](screenshots/releases.png)
+*Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).*
+
+### Сервер (Модель)
+![Server Model](screenshots/server-model.png)
+*Выбор основной модели, mmproj (зрение), черновой модели.*
+
+### Сервер (GPU)
+![Server GPU](screenshots/server-gpu.png)
+*Слои GPU, потоки, Flash Attention, кэш.*
+
+### Сервер (Контекст и сэмплинг)
+![Server Context](screenshots/server-context.png)
+*Размер контекста, температура, Top-P/K.*
+
+### Сервер (Продвинутое)
+![Server Advanced](screenshots/server-advanced.png)
+*MTP, спекулятивное декодирование, YARN/Rope.*
+
+### Логи
+![Logs](screenshots/logs.png)
+*Вывод логов сервера в реальном времени.*
+
+### Настройки
+![Settings](screenshots/settings.png)
+*Язык, пути, тема, сворачивание в трей, автозапуск.*
+
+### Обсуждение и поддержка
+![Support](screenshots/support.png)
+*Ссылка на Telegram канал, вдохновитель проекта.*
+
+### Плавающее окно мониторинга
+![Floating Window](screenshots/floating-window.png)
+*Компактный мониторинг поверх других окон.*
 
 ## 🚀 Установка
 
@@ -66,4 +99,4 @@ MIT License
 ## 📞 Поддержка
 
 *   Telegram канал: [Llama Studio App](https://t.me/LlamaStudioApp)
-*   Обсуждение и баги: [Discussions](https://github.com/YOUR_USERNAME/LlamaStudio/discussions)
+*   Обсуждение и баги: [Discussions](https://github.com/satspace-cpu/llamastudio/discussions)
