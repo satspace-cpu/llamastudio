@@ -29,6 +29,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] int _defaultPort = 8080;
     [ObservableProperty] string _defaultGpuLayers = "all";
     [ObservableProperty] bool _flashAttention = true;
+    string _internalUpdateChannel = "Stable";
     string _selectedUpdateChannel = "Stable";
     public string SelectedUpdateChannel
     {
@@ -37,7 +38,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _selectedUpdateChannel, value))
             {
-                _settings.UpdateChannel = value switch
+                _internalUpdateChannel = value switch
+                {
+                    var v when v == _loc.T("settings.prerelease") => "PreRelease",
+                    var v when v == _loc.T("settings.nightly") => "Nightly",
+                    _ => "Stable"
+                };
+                _settings.UpdateChannel = _internalUpdateChannel switch
                 {
                     "PreRelease" => Core.Enums.UpdateChannel.PreRelease,
                     "Nightly" => Core.Enums.UpdateChannel.Nightly,
@@ -47,7 +54,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             }
         }
     }
-    public string[] UpdateChannelOptions => new[] { "Stable", "PreRelease", "Nightly" };
+    public string[] UpdateChannelOptions => new[] { _loc.T("settings.stable"), _loc.T("settings.prerelease"), _loc.T("settings.nightly") };
     [ObservableProperty] string _selectedLanguage = "en";
     [ObservableProperty] string _updateStatus = "Not checked";
     [ObservableProperty] string _appVersion = "0.0.0";
@@ -87,7 +94,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnMonitorShowFanSpeedChanged(bool value) { _settings.MonitorShowFanSpeed = value; ResetAutoSave(); }
 
     public string[] LanguageOptions => new[] { "en", "ru" };
-    public string[] ThemeOptions => new[] { "Dark", "Light", "System" };
+    public string[] ThemeOptions => new[] { _loc.T("settings.dark"), _loc.T("settings.light"), _loc.T("settings.system") };
 
     // Text wrappers for port/gpu layers (TextBox binding instead of NumericUpDown)
     [ObservableProperty] string _defaultPortText = "8080";
@@ -201,7 +208,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LlamaCppBaseDirectory = _settings.LlamaCppBaseDirectory;
         LlamaCppDirectory = _settings.LlamaCppDirectory;
         ModelsDirectory = _settings.ModelsDirectory;
-        Theme = _settings.Theme;
+        Theme = _settings.Theme switch
+        {
+            "Light" => _loc.T("settings.light"),
+            "System" => _loc.T("settings.system"),
+            _ => _loc.T("settings.dark")
+        };
         AutoCheckUpdates = _settings.AutoCheckUpdates;
         MinimizeToTray = _settings.MinimizeToTray;
         StartMinimized = _settings.StartMinimized;
@@ -217,9 +229,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         FlashAttention = _settings.FlashAttention;
         SelectedUpdateChannel = _settings.UpdateChannel switch
             {
-                Core.Enums.UpdateChannel.PreRelease => "PreRelease",
-                Core.Enums.UpdateChannel.Nightly => "Nightly",
-                _ => "Stable"
+                Core.Enums.UpdateChannel.PreRelease => _loc.T("settings.prerelease"),
+                Core.Enums.UpdateChannel.Nightly => _loc.T("settings.nightly"),
+                _ => _loc.T("settings.stable")
             };
         SelectedLanguage = _loc.Language;
 
@@ -261,6 +273,24 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             nameof(TtGpuLayersDefault), nameof(TtFlashAttention)
         })
             OnPropertyChanged(prop);
+
+        // Refresh localized dropdown selections
+        Theme = _settings.Theme switch
+        {
+            "Light" => _loc.T("settings.light"),
+            "System" => _loc.T("settings.system"),
+            _ => _loc.T("settings.dark")
+        };
+
+        SelectedUpdateChannel = _settings.UpdateChannel switch
+        {
+            Core.Enums.UpdateChannel.PreRelease => _loc.T("settings.prerelease"),
+            Core.Enums.UpdateChannel.Nightly => _loc.T("settings.nightly"),
+            _ => _loc.T("settings.stable")
+        };
+
+        OnPropertyChanged(nameof(ThemeOptions));
+        OnPropertyChanged(nameof(UpdateChannelOptions));
     }
 
     partial void OnLlamaCppBaseDirectoryChanged(string value) => ResetAutoSave();
@@ -268,8 +298,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnModelsDirectoryChanged(string value) => ResetAutoSave();
     partial void OnThemeChanged(string value)
     {
+        var internalTheme = value switch
+        {
+            var v when v == _loc.T("settings.light") => "Light",
+            var v when v == _loc.T("settings.system") => "System",
+            _ => "Dark"
+        };
+        _settings.Theme = internalTheme;
         ResetAutoSave();
-        ApplyTheme(value);
+        ApplyTheme(internalTheme);
     }
 
     static void ApplyTheme(string? theme)
