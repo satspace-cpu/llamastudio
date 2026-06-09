@@ -45,3 +45,6 @@ backup_*/
 AGENTS.md
 CONTEXT.md
 TELEGRAM_SETUP.md
+
+# Source code - kept local only
+src/
