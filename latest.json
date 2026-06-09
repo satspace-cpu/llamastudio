@@ -1,6 +1,6 @@
 {
-  "version": "1.0.6",
-  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.0.6/LlamaStudio.exe",
-  "changelog": "Исправления:\n- Исправлена проверка обновлений: добавлена обработка ошибки 403 (rate limit exceeded).\n- Увеличен интервал проверки с 5 до 30 минут.\n- При ошибке проверки состояние флага обновления сохраняется.",
-  "publishedAt": "2026-06-09T12:00:00Z"
+  "version": "1.0.7",
+  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.0.7/LlamaStudio.exe",
+  "changelog": "Исправления:\n- Переход на статический JSON для проверки обновлений (убраны лимиты GitHub API).\n- Теперь обновления работают стабильно для тысяч пользователей.\n- Восстановлен интервал проверки каждые 5 минут.",
+  "publishedAt": "2026-06-09T13:00:00Z"
 }
