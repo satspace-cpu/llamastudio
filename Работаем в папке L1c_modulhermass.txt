@@ -1,0 +1,569 @@
+Работаем в папке L:\1c_modul\hermass
+
+Создай полноценное desktop-приложение для Windows 10/11 — GUI оболочку для llama.cpp server.
+
+Приложение должно быть полностью самостоятельным проектом с уникальным UI/UX и архитектурой.
+Нельзя копировать дизайн, код, структуру, стили или компоненты из проекта:
+https://github.com/pytraveler/LlamaServerLauncherAvalonia
+
+Разрешается:
+- изучить какие параметры llama-server существуют
+- понять какие функции нужны пользователям
+- реализовать аналогичную функциональность С НУЛЯ
+
+Нужно создать профессиональное приложение уровня:
+- LM Studio
+- Ollama GUI
+- Open WebUI launcher
+- Pinokio
+- LlamaServerLauncher
+
+Но специально ориентированное на:
+- llama.cpp server
+- локальные GGUF модели
+- MTP модели
+- multimodal/VLM модели
+- локальный inference
+- Windows desktop
+
+==================================================
+ОСНОВНЫЕ ТРЕБОВАНИЯ
+==================================================
+
+ПЛАТФОРМА
+- Windows 10/11
+- x64
+- NVIDIA GPU
+- CUDA support
+- portable режим
+- installer режим
+
+==================================================
+ТЕХНОЛОГИИ
+==================================================
+
+Используй:
+
+Frontend/Desktop:
+- C#
+- .NET 9
+- Avalonia UI
+
+Backend:
+- C#
+- async/await
+- MVVM architecture
+
+JSON:
+- System.Text.Json
+
+Логи:
+- Serilog
+
+HTTP:
+- HttpClient
+
+Process management:
+- Process API
+
+==================================================
+ЗАДАЧА ПРОЕКТА
+==================================================
+
+Создать GUI оболочку для:
+- llama-server.exe
+- llama-cli.exe
+- multimodal моделей llama.cpp
+
+Приложение должно:
+- автоматически скачивать llama.cpp releases
+- обновлять сервер
+- управлять моделями
+- запускать/останавливать сервер
+- хранить профили запуска
+- показывать логи
+- поддерживать MTP
+- поддерживать vision модели
+- поддерживать embedding models
+- поддерживать speculative decoding
+- поддерживать multimodal projection models
+- управлять всеми параметрами llama-server
+
+==================================================
+1. АВТОЗАГРУЗКА LLAMA.CPP
+==================================================
+
+Приложение должно:
+- проверять GitHub releases llama.cpp
+- получать свежие версии
+- скачивать Windows binaries
+- распаковывать
+- хранить несколько версий
+- переключаться между версиями
+
+Нужна:
+- проверка обновлений
+- rollback
+- portable cache
+
+Использовать:
+- GitHub API
+
+==================================================
+2. УПРАВЛЕНИЕ МОДЕЛЯМИ
+==================================================
+
+Нужен полноценный менеджер моделей.
+
+Поддержка:
+- GGUF
+- vision GGUF
+- embedding GGUF
+- reranker GGUF
+- MTP GGUF
+
+Возможности:
+- выбор папок с моделями
+- recursive scan
+- drag and drop
+- автоопределение:
+  - context
+  - quantization
+  - architecture
+  - MTP support
+  - vision support
+  - embedding support
+  - rope settings
+
+Показывать:
+- размер
+- quant
+- author
+- architecture
+- trained context
+- estimated VRAM
+- MTP layers
+- metadata GGUF
+
+==================================================
+3. ПОЛНАЯ ПОДДЕРЖКА ПАРАМЕТРОВ LLAMA-SERVER
+==================================================
+
+Реализовать GUI для ВСЕХ основных параметров llama-server.
+
+MODEL
+- model path
+- mmproj path
+- draft model
+- lora
+- control vectors
+
+GPU
+- gpu layers
+- split mode
+- tensor split
+- main gpu
+- numa
+- flash attention
+- mmap
+- mlock
+- no kv offload
+
+CONTEXT
+- ctx size
+- batch
+- ubatch
+- cache type
+- kv cache quantization
+
+SAMPLING
+- temperature
+- top-k
+- top-p
+- min-p
+- typical-p
+- repeat penalty
+- repeat last n
+- mirostat
+- dry penalty
+- dynatemp
+- xtc
+- sampler order
+
+MTP
+- enable MTP
+- draft model selection
+- speculative decoding
+- prediction count
+- parallel decoding
+
+SERVER
+- host
+- port
+- threads
+- priority
+- timeout
+- slots
+- continuous batching
+
+MULTIMODAL
+- mmproj
+- image encoder
+- vision settings
+- image preprocessing
+
+EMBEDDING
+- embedding mode
+- pooling
+
+ADVANCED
+- rope scaling
+- yarn
+- rope freq base
+- rope freq scale
+- cache reuse
+- numa
+- cpu affinity
+- scheduler
+- tensor split
+
+==================================================
+4. ПРОФИЛИ
+==================================================
+
+Сделать систему профилей запуска.
+
+Пример:
+- Gaming
+- Coding
+- Roleplay
+- Vision
+- MTP fast mode
+- 24GB VRAM mode
+- CPU fallback
+
+Функции:
+- save
+- duplicate
+- export
+- import
+- auto-load
+
+==================================================
+5. UI/UX
+==================================================
+
+Интерфейс должен быть:
+- современный
+- минималистичный
+- НЕ копировать LM Studio
+- НЕ копировать LlamaServerLauncher
+- НЕ копировать Open WebUI
+
+Стиль:
+- clean dark UI
+- glassmorphism optional
+- responsive
+- sidebar navigation
+- cards
+- collapsible advanced sections
+
+Разделы:
+- Dashboard
+- Models
+- Server
+- Profiles
+- Downloads
+- Logs
+- Settings
+
+==================================================
+6. ЛОГИ И МОНИТОРИНГ
+==================================================
+
+Нужно:
+- realtime logs
+- colored logs
+- stderr/stdout split
+- filtering
+- search
+- export logs
+
+Мониторинг:
+- VRAM usage
+- RAM usage
+- tokens/sec
+- queue
+- active slots
+- generation stats
+
+==================================================
+7. OPENAI API COMPATIBLE
+==================================================
+
+Реализовать:
+- встроенный тест API
+- chat test window
+- completions
+- embeddings
+- multimodal requests
+
+==================================================
+8. MULTIMODAL
+==================================================
+
+Поддержать:
+- Qwen VL
+- Gemma Vision
+- LLaVA
+- MiniCPM-V
+- InternVL
+- Phi Vision
+
+Нужно:
+- image upload
+- drag/drop
+- image preview
+- mmproj validation
+
+==================================================
+9. MTP SUPPORT
+==================================================
+
+Полная поддержка:
+- Qwen MTP
+- grafted MTP
+- draft models
+- speculative decoding
+
+Показывать:
+- expected speedup
+- compatibility
+- warning if unsupported
+
+==================================================
+10. СТРУКТУРА ПРОЕКТА
+==================================================
+
+Создай production-grade структуру.
+
+Пример:
+
+/src
+    /Core
+    /Services
+    /UI
+    /ViewModels
+    /Models
+    /Infrastructure
+    /Updater
+    /Llama
+    /Profiles
+    /Telemetry
+    /Logging
+
+==================================================
+11. АРХИТЕКТУРА
+==================================================
+
+Использовать:
+- MVVM
+- dependency injection
+- services
+- repository pattern
+- async architecture
+
+==================================================
+12. ПОШАГОВАЯ РЕАЛИЗАЦИЯ
+==================================================
+
+Ты должен работать ПОЭТАПНО.
+
+После каждого этапа:
+- объяснять что сделано
+- показывать дерево проекта
+- показывать созданные файлы
+- объяснять архитектурные решения
+- писать TODO следующего этапа
+
+Нельзя:
+- генерировать огромную кашу кода сразу
+- пропускать этапы
+- делать single file app
+
+==================================================
+ЭТАПЫ РАЗРАБОТКИ
+==================================================
+
+ЭТАП 1
+Создание архитектуры проекта.
+
+Нужно:
+- solution
+- projects
+- MVVM setup
+- dependency injection
+- logging
+- settings system
+
+После этого:
+- отчет
+- дерево файлов
+- explanation
+
+--------------------------------------------------
+
+ЭТАП 2
+Базовый UI shell.
+
+Нужно:
+- sidebar
+- navigation
+- themes
+- dashboard
+
+--------------------------------------------------
+
+ЭТАП 3
+Llama.cpp downloader/updater.
+
+--------------------------------------------------
+
+ЭТАП 4
+Model scanner/parser.
+
+--------------------------------------------------
+
+ЭТАП 5
+Server launch manager.
+
+--------------------------------------------------
+
+ЭТАП 6
+Realtime logs.
+
+--------------------------------------------------
+
+ЭТАП 7
+Profiles system.
+
+--------------------------------------------------
+
+ЭТАП 8
+MTP support.
+
+--------------------------------------------------
+
+ЭТАП 9
+Multimodal support.
+
+--------------------------------------------------
+
+ЭТАП 10
+API testing panel.
+
+--------------------------------------------------
+
+ЭТАП 11
+Packaging.
+
+==================================================
+ВАЖНЫЕ ПРАВИЛА
+==================================================
+
+НЕ УПРОЩАЙ.
+
+Не делай:
+- примитивный launcher
+- минимальный GUI
+- demo app
+
+Делай production-ready приложение.
+
+==================================================
+ТРЕБОВАНИЯ К КОДУ
+==================================================
+
+- чистый код
+- комментарии
+- async
+- cancellation tokens
+- proper exception handling
+- no hardcoded paths
+- no blocking UI thread
+
+==================================================
+ОТЧЕТЫ
+==================================================
+
+После каждого этапа выводить:
+
+1. Что реализовано
+2. Какие файлы созданы
+3. Какие зависимости добавлены
+4. Какие проблемы решены
+5. Что будет дальше
+6. Команды запуска
+7. Скрин структуры проекта
+
+==================================================
+КОНЕЧНАЯ ЦЕЛЬ
+==================================================
+
+Создать лучший open-source launcher для llama.cpp server под Windows с:
+- MTP
+- multimodal
+- GGUF management
+- server orchestration
+- modern UI
+- updater
+- advanced inference controls
+
+Приложение должно выглядеть как профессиональный production desktop app, а не pet-project.
+
+==================================================
+РЕЖИМ РАБОТЫ
+==================================================
+
+Работай как senior software architect + senior C# desktop engineer.
+
+Перед генерацией кода:
+- сначала продумывай архитектуру
+- потом реализацию
+- потом код
+
+Никогда не пропускай этап:
+planning → architecture → implementation → report.
+
+==================================================
+ДОПОЛНИТЕЛЬНЫЕ ТРЕБОВАНИЯ
+==================================================
+
+- Используй latest stable Avalonia patterns
+- Используй CommunityToolkit.Mvvm
+- Используй proper DI container
+- Сделай красивую систему настроек
+- Добавь автообнаружение GPU
+- Добавь VRAM calculator
+- Добавь проверку совместимости параметров
+- Добавь graceful shutdown llama-server
+- Добавь health monitoring
+- Добавь crash recovery
+- Добавь portable mode
+- Добавь settings migration system
+- Добавь queue system для launch tasks
+- Добавь validation UI
+- Добавь tooltips для всех параметров llama.cpp
+- Добавь searchable parameter database
+- Добавь presets для популярных моделей
+- Добавь import/export JSON configs
+- Добавь диагностику проблем запуска
+
+==================================================
+ВАЖНО
+==================================================
+
+Не ограничивайся поверхностной реализацией.
+Думай как создатель профессионального desktop inference manager уровня LM Studio.
+
+Каждый этап должен быть production-grade.
