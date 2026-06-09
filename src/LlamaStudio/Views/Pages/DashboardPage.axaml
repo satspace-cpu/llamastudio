@@ -12,8 +12,8 @@
         <StackPanel Spacing="20" Margin="20">
             <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
 
-            <!-- Status Cards — 5 columns -->
-            <UniformGrid Columns="5">
+            <!-- Status Cards — 4 columns -->
+            <UniformGrid Columns="4">
                 <!-- Server Status -->
                 <Border Background="{DynamicResource CardServerBackground}" CornerRadius="12" Padding="20"
                         Margin="4"
@@ -121,15 +121,25 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Active Model -->
+                <!-- Llama Studio App -->
                 <Border Background="{DynamicResource CardModelBackground}" CornerRadius="12" Padding="20"
                         Margin="4"
                         BorderBrush="{DynamicResource CardModelAccent}" BorderThickness="1">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{Binding ActiveModelLabel}" FontSize="13" Foreground="{DynamicResource CardModelLabel}"/>
-                        <TextBlock Text="{Binding SelectedModel}"
-                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}"
-                                   TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding AppVersionLabel}" FontSize="13" Foreground="{DynamicResource CardModelLabel}"/>
+                        <TextBlock Text="{Binding AppVersion}"
+                                   FontSize="14" FontWeight="Bold" Foreground="{DynamicResource ThemeTextPrimary}"/>
+                        <TextBlock Text="{Binding AppUpdateStatus}" FontSize="11" Foreground="{DynamicResource CardSubText}"/>
+                        <Button Content="{Binding AppUpdateBtnText}"
+                                Command="{Binding UpdateAppCommand}"
+                                IsVisible="{Binding HasAppUpdate}"
+                                Background="{DynamicResource BtnPrimary}" Foreground="{DynamicResource BadgeText}"
+                                BorderThickness="0" CornerRadius="6" Padding="10,6"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                FontSize="12" FontWeight="SemiBold"/>
+                        <ProgressBar Value="{Binding AppUpdateProgress}" Maximum="100" Height="6" CornerRadius="3"
+                                     Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource CardModelAccent}"
+                                     IsVisible="{Binding IsUpdatingApp}"/>
                     </StackPanel>
                 </Border>
             </UniformGrid>

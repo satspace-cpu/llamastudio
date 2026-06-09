@@ -37,6 +37,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] bool _hasUpdateAvailable;
     [ObservableProperty] string _latestVersion = "";
     [ObservableProperty] string _updateChangelog = "";
+    [ObservableProperty] bool _isDownloading;
+    [ObservableProperty] double _downloadProgress;
 
     // Monitoring settings
     [ObservableProperty] double _monitorOpacity = 0.92;
@@ -132,6 +134,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public string NightlyChannel => _loc.T("settings.nightly");
     public string RussianLanguage => _loc.T("settings.russian");
     public string EnglishLanguage => _loc.T("settings.english");
+
+    // App update strings
+    public string AppVersionLabel => _loc.T("dash.app_version");
+    public string AppUpdateStatus => HasUpdateAvailable ? $"↑ {_loc.T("dash.new_version")} {LatestVersion}" : $"✓ {_loc.T("dash.up_to_date")}";
+    public string CheckUpdatesBtn => IsCheckingUpdates ? _loc.T("dash.checking_update") : _loc.T("dash.check_updates");
+    public string DownloadUpdateBtn => IsDownloading ? $"{_loc.T("dash.downloading")} {DownloadProgress:F0}%" : $"{_loc.T("dash.update")} ({LatestVersion})";
 
     // ToolTips
     public string TtLanguage => _loc.T("tt.language");
@@ -458,6 +466,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     partial void OnFlashAttentionChanged(bool value) => ResetAutoSave();
     partial void OnUpdateChannelChanged(Core.Enums.UpdateChannel value) => ResetAutoSave();
+    partial void OnHasUpdateAvailableChanged(bool value) { OnPropertyChanged(nameof(AppUpdateStatus)); }
+    partial void OnLatestVersionChanged(string value) { OnPropertyChanged(nameof(AppUpdateStatus)); OnPropertyChanged(nameof(DownloadUpdateBtn)); }
+    partial void OnIsDownloadingChanged(bool value) { OnPropertyChanged(nameof(DownloadUpdateBtn)); }
+    partial void OnDownloadProgressChanged(double value) { OnPropertyChanged(nameof(DownloadUpdateBtn)); }
     partial void OnSelectedLanguageChanged(string value)
     {
         if (!string.IsNullOrEmpty(value))
@@ -624,6 +636,75 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         finally
         {
             IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    async Task DownloadUpdate()
+    {
+        if (!HasUpdateAvailable)
+            return;
+
+        IsDownloading = true;
+        DownloadProgress = 0;
+        UpdateStatus = "Downloading update...";
+
+        try
+        {
+            // Subscribe to progress events
+            _appUpdater.ProgressChanged += (s, progress) => DownloadProgress = progress;
+
+            // Download update to temp directory
+            var tempDir = Path.Combine(Path.GetTempPath(), "LlamaStudio_Update");
+            if (!Directory.Exists(tempDir))
+                Directory.CreateDirectory(tempDir);
+
+            var update = await _appUpdater.CheckForUpdatesAsync();
+            if (update == null)
+            {
+                UpdateStatus = "No update available";
+                HasUpdateAvailable = false;
+                return;
+            }
+
+            var downloadedPath = await _appUpdater.DownloadUpdateAsync(update, tempDir);
+
+            // Prepare auto-restart: create a batch file to replace and restart
+            var currentExe = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(currentExe))
+            {
+                // Create a restart script
+                var restartScript = Path.Combine(tempDir, "restart.bat");
+                File.WriteAllText(restartScript, $@"
+@echo off
+timeout /t 2 /nobreak >nul
+copy /y ""{downloadedPath}"" ""{currentExe}"" >nul
+start """" ""{currentExe}""
+del ""{restartScript}""
+rmdir /q /s ""{tempDir}""
+");
+
+                // Start the restart script
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = restartScript,
+                    UseShellExecute = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                });
+
+                // Exit current app
+                _log.Information($"App update downloaded, restarting...", "Settings");
+                Environment.Exit(0);
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"Error: {ex.Message}";
+            _log.Error($"App update failed: {ex.Message}", "Settings");
+        }
+        finally
+        {
+            IsDownloading = false;
         }
     }
 }

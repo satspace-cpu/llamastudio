@@ -19,6 +19,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     readonly INavigationService _navigation;
     readonly ILocalizationService _loc;
     readonly ILlamaUpdater _updater;
+    readonly IAppUpdater _appUpdater;
     readonly IGpuMonitor _gpuMonitor;
     readonly ILogService _log;
     readonly IDialogService _dialog;
@@ -163,6 +164,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] bool _showVersionList;
     [ObservableProperty] ObservableCollection<string> _installedVersions = new();
 
+    // App update properties
+    [ObservableProperty] string _appVersion = "0.0.0";
+    [ObservableProperty] bool _hasAppUpdate;
+    [ObservableProperty] bool _isUpdatingApp;
+    [ObservableProperty] double _appUpdateProgress;
+    [ObservableProperty] string _appLatestVersion = "";
+
     public string UpdateButtonLabel => IsCheckingVersion ? CheckingVersion : (HasUpdate ? string.Format(_loc.T("dash.update_version"), LatestVersion) : CheckUpdatesBtn);
 
     // Localized update button label
@@ -173,6 +181,10 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     public string VersionStatusText => IsCheckingVersion ? $"⏳ {CheckingVersion}" : (HasUpdate ? $"↑ {UpdateAvailable}, {LatestVersion}" : $"✓ {UpToDate}");
 
     partial void OnHasUpdateChanged(bool value) { OnPropertyChanged(nameof(UpdateButtonLabel)); OnPropertyChanged(nameof(VersionStatusText)); OnPropertyChanged(nameof(UpdateBtnText)); }
+    partial void OnHasAppUpdateChanged(bool value) { OnPropertyChanged(nameof(AppUpdateStatus)); OnPropertyChanged(nameof(AppUpdateBtnText)); }
+    partial void OnAppLatestVersionChanged(string value) { OnPropertyChanged(nameof(AppUpdateStatus)); OnPropertyChanged(nameof(AppUpdateBtnText)); }
+    partial void OnIsUpdatingAppChanged(bool value) { OnPropertyChanged(nameof(AppUpdateBtnText)); }
+    partial void OnAppUpdateProgressChanged(double value) { OnPropertyChanged(nameof(AppUpdateBtnText)); }
     partial void OnLatestVersionChanged(string value) { OnPropertyChanged(nameof(UpdateButtonLabel)); OnPropertyChanged(nameof(VersionStatusText)); OnPropertyChanged(nameof(UpdateBtnText)); }
     partial void OnIsCheckingVersionChanged(bool value) { OnPropertyChanged(nameof(UpdateButtonLabel)); OnPropertyChanged(nameof(VersionStatusText)); }
     partial void OnIsUpdatingChanged(bool value) => OnPropertyChanged(nameof(UpdateBtnText));
@@ -358,6 +370,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     public string StopServerBtn => _loc.T("server.stop_btn");
     public string MonitoringBtn => _loc.T("main.monitoring");
 
+    // App update strings
+    public string AppVersionLabel => _loc.T("dash.app_version");
+    public string AppUpdateBtnText => IsUpdatingApp ? $"{_loc.T("dash.downloading")} {AppUpdateProgress:F0}%" : $"{_loc.T("dash.update")} (v{AppLatestVersion})";
+    public string AppUpdateStatus => HasAppUpdate ? $"↑ {_loc.T("dash.new_version")} {AppLatestVersion}" : $"✓ {_loc.T("dash.up_to_date")}";
+
     // Profile selection
     [ObservableProperty] System.Collections.ObjectModel.ObservableCollection<Core.Models.ServerProfile> _allProfiles = new();
     [ObservableProperty] Core.Models.ServerProfile? _selectedProfile;
@@ -496,6 +513,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         INavigationService navigation,
         ILocalizationService loc,
         ILlamaUpdater updater,
+        IAppUpdater appUpdater,
         IGpuMonitor gpuMonitor,
         ILogService log,
         IDialogService dialog,
@@ -508,6 +526,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _navigation = navigation;
         _loc = loc;
         _updater = updater;
+        _appUpdater = appUpdater;
         _gpuMonitor = gpuMonitor;
         _log = log;
         _dialog = dialog;
@@ -515,12 +534,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
         GpuAvailable = gpuMonitor.IsAvailable;
 
+        // Init app version
+        AppVersion = _appUpdater.GetCurrentVersion();
+
         _gpuTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _gpuTimer.Tick += (_, _) => _ = RefreshGpuAsync();
         _gpuTimer.Start();
 
         _serverManager.StatusChanged += (s, status) => ServerStatus = status;
         _loc.OnLanguageChanged += OnLanguageChanged;
+
+        // Auto-check for app updates on startup if enabled
+        if (_settings.AutoCheckUpdates)
+        {
+            _ = CheckAppUpdatesAsync();
+        }
     }
 
     public void Dispose()
@@ -763,6 +791,88 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             await _dialog.ShowErrorAsync(
                 $"{_loc.T("dash.restart_failed")}: {ex.Message}",
                 _loc.T("dash.error"));
+        }
+    }
+
+    async Task CheckAppUpdatesAsync()
+    {
+        try
+        {
+            var update = await _appUpdater.CheckForUpdatesAsync();
+            if (update != null)
+            {
+                HasAppUpdate = true;
+                AppLatestVersion = update.Version;
+                _log.Information($"App update available: {update.Version}", "Dashboard");
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    async Task UpdateAppAsync()
+    {
+        try
+        {
+            IsUpdatingApp = true;
+            AppUpdateProgress = 0;
+
+            // Subscribe to progress events
+            _appUpdater.ProgressChanged += (s, progress) => AppUpdateProgress = progress;
+
+            // Check for updates
+            var update = await _appUpdater.CheckForUpdatesAsync();
+            if (update == null)
+            {
+                IsUpdatingApp = false;
+                return;
+            }
+
+            AppLatestVersion = update.Version;
+            HasAppUpdate = true;
+
+            // Download update to temp directory
+            var tempDir = Path.Combine(Path.GetTempPath(), "LlamaStudio_Update");
+            if (!Directory.Exists(tempDir))
+                Directory.CreateDirectory(tempDir);
+
+            var downloadedPath = await _appUpdater.DownloadUpdateAsync(update, tempDir);
+
+            // Prepare auto-restart: create a batch file to replace and restart
+            var currentExe = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(currentExe))
+            {
+                // Create a restart script
+                var restartScript = Path.Combine(tempDir, "restart.bat");
+                File.WriteAllText(restartScript, $@"
+@echo off
+timeout /t 2 /nobreak >nul
+copy /y ""{downloadedPath}"" ""{currentExe}"" >nul
+start """" ""{currentExe}""
+del ""{restartScript}""
+rmdir /q /s ""{tempDir}""
+");
+
+                // Start the restart script
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = restartScript,
+                    UseShellExecute = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                });
+
+                // Exit current app
+                _log.Information($"App update downloaded, restarting...", "Dashboard");
+                Environment.Exit(0);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Error($"App update failed: {ex.Message}", "Dashboard");
+        }
+        finally
+        {
+            IsUpdatingApp = false;
         }
     }
 

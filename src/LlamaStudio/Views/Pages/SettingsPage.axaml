@@ -127,6 +127,37 @@
                             <ComboBoxItem Content="{Binding NightlyChannel, ElementName=Root}"/>
                         </ComboBox>
                     </Grid>
+
+                    <!-- App Update Section -->
+                    <Border Background="{DynamicResource ThemeCard}" CornerRadius="8" Padding="16"
+                            BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" Margin="0,8,0,0">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock Text="{Binding AppVersionLabel}" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SectionTitle}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AppVersion}" FontSize="13" FontWeight="Bold"
+                                           Foreground="{DynamicResource ThemeAccent}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AppUpdateStatus}" FontSize="12"
+                                           Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button Content="{Binding CheckUpdatesBtn}"
+                                        Command="{Binding CheckForUpdatesCommand}"
+                                        IsEnabled="{Binding IsCheckingUpdates, Converter={StaticResource InvertedBoolConverter}}"
+                                        Background="{DynamicResource BtnPrimary}" Foreground="White"
+                                        Padding="12,8" CornerRadius="8"/>
+                                <Button Content="{Binding DownloadUpdateBtn}"
+                                        Command="{Binding DownloadUpdateCommand}"
+                                        IsVisible="{Binding HasUpdateAvailable}"
+                                        IsEnabled="{Binding IsDownloading, Converter={StaticResource InvertedBoolConverter}}"
+                                        Background="{DynamicResource BtnSuccess}" Foreground="White"
+                                        Padding="12,8" CornerRadius="8"/>
+                                <ProgressBar Value="{Binding DownloadProgress}" Maximum="100" Width="120" Height="8"
+                                             CornerRadius="4" IsVisible="{Binding IsDownloading}"
+                                             Background="{DynamicResource ProgressTrack}" Foreground="{DynamicResource BtnSuccess}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 
