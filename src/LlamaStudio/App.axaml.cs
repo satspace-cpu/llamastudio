@@ -187,6 +187,9 @@ public partial class App : Application
                         sp.GetRequiredService<ISettings>(),
                         sp.GetRequiredService<ICliValidator>(),
                         sp.GetRequiredService<IHelpParser>()));
+                services.AddSingleton<IAppUpdater>(sp => new AppUpdater(
+                        sp.GetRequiredService<HttpClient>(),
+                        sp.GetRequiredService<ILogService>()));
                 services.AddSingleton<IServerManager, ServerManager>();
                 services.AddSingleton<IModelScanner, ModelScanner>();
                 services.AddSingleton<IProfileManager, ProfileManager>();

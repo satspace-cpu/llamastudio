@@ -11,6 +11,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     readonly ILogService _log;
     readonly IDialogService _dialog;
     readonly ILocalizationService _loc;
+    readonly IAppUpdater _appUpdater;
     System.Timers.Timer? _autoSaveTimer;
     bool _isDisposing;
 
@@ -31,6 +32,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] Core.Enums.UpdateChannel _updateChannel = Core.Enums.UpdateChannel.Stable;
     [ObservableProperty] string _selectedLanguage = "en";
     [ObservableProperty] string _updateStatus = "Not checked";
+    [ObservableProperty] string _appVersion = "0.0.0";
+    [ObservableProperty] bool _isCheckingUpdates;
+    [ObservableProperty] bool _hasUpdateAvailable;
+    [ObservableProperty] string _latestVersion = "";
+    [ObservableProperty] string _updateChangelog = "";
 
     // Monitoring settings
     [ObservableProperty] double _monitorOpacity = 0.92;
@@ -148,12 +154,23 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public string TtGpuLayersDefault => _loc.T("tt.gpu_layers_default");
     public string TtFlashAttention => _loc.T("tt.flash_attention");
 
-    public SettingsViewModel(ISettings settings, ILogService log, IDialogService dialog, ILocalizationService loc)
+    public SettingsViewModel(ISettings settings, ILogService log, IDialogService dialog, ILocalizationService loc, IAppUpdater appUpdater)
     {
         _settings = settings;
         _log = log;
         _dialog = dialog;
         _loc = loc;
+        _appUpdater = appUpdater;
+
+        AppVersion = _appUpdater.GetCurrentVersion();
+
+        _appUpdater.StatusChanged += (s, msg) => UpdateStatus = msg;
+        _appUpdater.UpdateAvailable += (s, info) =>
+        {
+            HasUpdateAvailable = true;
+            LatestVersion = info.Version;
+            UpdateChangelog = info.Changelog;
+        };
 
         LlamaCppBaseDirectory = _settings.LlamaCppBaseDirectory;
         LlamaCppDirectory = _settings.LlamaCppDirectory;
@@ -521,6 +538,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _autoSaveTimer?.Stop();
         _autoSaveTimer?.Dispose();
         _autoSaveTimer = null;
+        _appUpdater.StatusChanged -= (s, msg) => UpdateStatus = msg;
+        _appUpdater.UpdateAvailable -= (s, info) =>
+        {
+            HasUpdateAvailable = true;
+            LatestVersion = info.Version;
+            UpdateChangelog = info.Changelog;
+        };
     }
 
     [RelayCommand]
@@ -565,6 +589,41 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ModelsDirectory = path;
             _settings.ModelsDirectory = path;
             await _settings.SaveAsync();
+        }
+    }
+
+    [RelayCommand]
+    async Task CheckForUpdates()
+    {
+        IsCheckingUpdates = true;
+        HasUpdateAvailable = false;
+        LatestVersion = "";
+        UpdateChangelog = "";
+        UpdateStatus = "Checking for updates...";
+
+        try
+        {
+            var update = await _appUpdater.CheckForUpdatesAsync();
+            if (update == null)
+            {
+                UpdateStatus = $"No updates available (current: {AppVersion})";
+                _log.Information($"No updates available for LlamaStudio {AppVersion}", "Settings");
+            }
+            else
+            {
+                // Update is already reported via event
+                UpdateStatus = $"Update available: {update.Version}";
+                _log.Information($"Update available: {update.Version}", "Settings");
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"Error: {ex.Message}";
+            _log.Error($"Failed to check for updates: {ex.Message}", "Settings");
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
         }
     }
 }
