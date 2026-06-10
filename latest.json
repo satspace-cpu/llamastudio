@@ -1,1 +1,6 @@
-{"version":"1.1.3","publishedAt":"2026-06-09T21:44:53+03:00","downloadUrl":"https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.3/LlamaStudio.exe","changelog":"Исправления:\n• Исправлена настройка «Не выгружать сервер при закрытии» — теперь сервер корректно останавливается при закрытии приложения, если галочка выключена."}
+{
+    "publishedAt":  "2026-06-10T04:15:18Z",
+    "changelog":  "Новое:\n- Поиск моделей прямо в приложении — вводи название (например MTP или Qwen MTP), выбирай из списка, и модель автоматически загружается для скачивания\n- Кэш результатов поиска — повторный ввод не делает лишних запросов",
+    "version":  "1.1.4",
+    "downloadUrl":  "https://github.com/satspace-cpu/llamastudio/releases/download/v1.1.4/LlamaStudio.exe"
+}
