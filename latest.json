@@ -2,7 +2,5 @@
     "publishedAt": "2026-06-16T16:45:00Z",
     "changelog": "New:\n- Speed measurement - button in server section and monitoring window. Measures prompt processing and token generation speed via streaming API.\n- llama.cpp servers via profile: server folder and selected server bound to profile, auto-scan on folder selection, releases install strictly to profile folder, profile switch loads correct server.\n- Release downloads: Cancel button during download, removed auto-version switch - release appears in list, switch only via Use button.\n\nFixes:\n- Installed versions cards - proper alignment\n- KV Cache tab tooltips restored\n- Duplicated paths removed from Settings\n- Support page - text and buttons display correctly\n- Check for Updates button - now displays in interface language (RU/EN)",
     "version": "1.2.0",
-    "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.2.0/LlamaStudio.exe",
-    "sha256": "4836e578088fc7e3cb58cbb4f36fb332fc7ff6ac8b1809025dac2de12e7bbfb5",
-    "size": 109174195
+    "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.2.0/LlamaStudio.exe"
 }
