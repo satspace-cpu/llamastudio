@@ -1,6 +1,6 @@
 {
   "version": "1.2.0",
-  "download_url": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.2.0/LlamaStudio.exe",
+  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.2.0/LlamaStudio.exe",
   "sha256": "4836e578088fc7e3cb58cbb4f36fb332fc7ff6ac8b1809025dac2de12e7bbfb5",
   "size": 109174195,
   "changelog": "Исправления:\n- Страница «Обсуждение и поддержка» — текст и кнопки отображаются корректно\n- Кнопка «Проверить обновления» — теперь отображается на языке интерфейса (RU/EN)"
