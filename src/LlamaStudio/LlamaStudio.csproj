@@ -7,7 +7,11 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>LlamaStudio</AssemblyName>
     <RootNamespace>LlamaStudio</RootNamespace>
-    <Version>1.1.5</Version>
+    <Version>1.2.3</Version>
+   </PropertyGroup>
+
+   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Version>1.2.3</Version>
     <Company>Llama Studio</Company>
     <Product>Llama Studio - llama.cpp Server Manager</Product>
     <Description>Professional GUI launcher and manager for llama.cpp server with MTP, multimodal, and GGUF model support.</Description>
