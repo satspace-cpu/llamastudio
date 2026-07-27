@@ -1,6 +1,0 @@
-{
-  "version": "1.3.0",
-  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.3.0/LlamaStudio.exe",
-  "publishedAt": "2026-07-27T00:00:00Z",
-  "changelog": "Llama Studio v1.3.0: redesigned dashboard and documentation, multi-GPU monitoring and tensor-split controls, persistent GPU profiles, synchronized llama.cpp server selection, resumable Hugging Face downloads with pause/cancel support, speed-test stability improvements, memory-leak and crash fixes, improved localization, and Russian/English release notes."
-}
