@@ -1,331 +1,109 @@
 # Llama Studio
 
-**Llama Studio** — это удобное десктопное приложение для управления локальными AI-моделями (llama.cpp) на Windows. Позволяет запускать сервер, управлять профилями, мониторить GPU и общаться с моделями через встроенный чат.
+**Llama Studio** is a self-contained Windows x64 desktop manager for local GGUF models and [llama.cpp](https://github.com/ggml-org/llama.cpp) servers.
 
-## 🛠 О разработке
+The public distribution is intentionally simple: download one `LlamaStudio.exe` from [Releases](https://github.com/satspace-cpu/llamastudio/releases) and run it. Development sources are maintained separately in the private source repository.
 
-> 💡 **Этот проект разработан полностью локально** — без привлечения облачных AI-сервисов (ChatGPT, Claude и др.). Весь код написан с помощью локальной модели Qwen3.6-27B через AI-ассистент OpenCode.
+## Features
 
-| Параметр | Значение |
-|----------|---------|
-| 💻 **Платформа** | Windows 11 (x64) |
-| 🧠 **AI-ассистент** | [OpenCode](https://opencode.ai) — интерактивный CLI для разработки |
-| 🤖 **Основная модель** | `Qwen3.6-27B-UD-Q5_K_XL.gguf` (27B параметров, Q5 квантование) |
-| 👁 **Модель зрения** | `mmproj-F32.gguf` (мультимодальный проектор) |
-| 🎮 **Видеокарта** | NVIDIA GeForce RTX 5090 (32 ГБ VRAM) |
-| 💾 **Оперативная память** | 64 ГБ DDR5 |
-| ⚡ **Сборка llama.cpp** | b9570-cuda12x (CUDA 12) |
-| 📦 **Фреймворк** | Avalonia UI + .NET 8 (C#) |
-| 🏗 **Архитектура** | Clean Architecture (UI → Core ← Infrastructure) |
+- Dashboard with server state, active model, profile, llama.cpp build and application update status.
+- Profile-based configuration for models, vision projectors, GPU devices, tensor split, KV cache and server arguments.
+- Multi-GPU setup for CUDA devices with selected-device controls, main GPU selection, manual distribution and llama.cpp automatic fitting.
+- Backend-aware server management for CUDA 12, CUDA 13, Vulkan, CPU and other installed llama.cpp builds.
+- Live multi-GPU monitoring on the dashboard, Server page, Monitoring page and floating window.
+- VRAM, GPU load, total GPU power, GPU temperature, memory temperature when available, clock, fan and Compute Capability.
+- Aggregate system RAM and total power bars for all GPUs.
+- Prompt and generation speed measurement without blocking the user interface.
+- Hugging Face search, repository selection, GGUF file listing and sharded model downloads.
+- Pause, cancel, resume and recovery of large downloads after an unexpected shutdown.
+- Download progress, speed, transferred size and remaining size.
+- Browser-based local chat through the llama-server web interface.
+- Logs, system-tray operation, autostart and persistent application settings.
+- English and Russian localization.
+- Built-in application update channel based on `latest.json`.
 
-### ⚙️ Параметры запуска llama-server (использовались при разработке)
+## Screenshots
 
-```
--m "Qwen3.6-27B-UD-Q5_K_XL.gguf"
---mmproj "mmproj-F32.gguf"
--ngl all
---threads -1
--fa on
---mmap
--c 150000
---batch 2048
---ubatch 512
---cache-type-k q8_0
---cache-type-v q8_0
---cache-ram 24000
---cache-reuse 256
---temp 0.3
---top-p 0.95
---top-k 40
---min-p 0.05
---repeat-penalty 1.05
---spec-type draft-mtp
---spec-draft-n-max 3
---spec-draft-p-split 0.1
---verbose
---ui
---host 0.0.0.0
---port 8080
---timeout 3600
-```
-
-## ✨ Возможности
-
-*   **Управление сервером:** Запуск, остановка и перезагрузка `llama-server` в один клик.
-*   **Профили настроек:** Создание и сохранение профилей для разных моделей (GPU слои, контекст, температура и т.д.).
-*   **Мониторинг в реальном времени:** Отслеживание VRAM, загрузки GPU, скорости токенов (tok/s) и потребления памяти.
-*   **Встроенный чат:** Удобный интерфейс для общения с локальной моделью.
-*   **Поддержка Hugging Face:** Быстрый поиск и загрузка моделей.
-*   **Плавающее окно мониторинга:** Всегда видные показатели работы системы поверх других окон.
-*   **Работа с треєм:** Сворачивание в трей, автозапуск, работа без главного окна.
-
-## 📸 Скриншоты
-
-**Главная (Dashboard)**
-*Обзор состояния сервера, мониторинг GPU (RTX 5090), активная модель, профиль.*
+### Dashboard
 
 ![Dashboard](screenshots/dashboard.png)
 
-**Чат**
-*Встроенный чат с AI, поддержка MCP инструментов.*
-
-![Chat](screenshots/chat.png)
-
-**Модели**
-*Список найденных моделей, загрузка с HuggingFace, контекстное меню.*
-
-![Models](screenshots/models.png)
-
-**Мониторинг**
-*Скорость токенов (Ответ/Промпт), графики VRAM, температуры, мощности.*
+### Multi-GPU monitoring
 
 ![Monitoring](screenshots/monitoring.png)
 
-**Релизы llama.cpp**
-*Установка и управление версиями сервера (CUDA 12, CUDA 13, CPU).*
+### Floating monitor
+
+![Floating monitor](screenshots/floating-window.png)
+
+### Server configuration
+
+![Server model](screenshots/server-model.png)
+![Server GPU](screenshots/server-gpu.png)
+![Server context](screenshots/server-context.png)
+![Server advanced](screenshots/server-advanced.png)
+![Server connection](screenshots/server-connect.png)
+
+### Models and Hugging Face downloads
+
+![Models](screenshots/models.png)
+
+### llama.cpp releases
 
 ![Releases](screenshots/releases.png)
 
-**Сервер (Модель)**
-*Выбор основной модели, mmproj (зрение), черновой модели.*
-
-![Server Model](screenshots/server-model.png)
-
-**Сервер (GPU)**
-*Слои GPU, потоки, Flash Attention, кэш.*
-
-![Server GPU](screenshots/server-gpu.png)
-
-**Сервер (Контекст и сэмплинг)**
-*Размер контекста, температура, Top-P/K.*
-
-![Server Context](screenshots/server-context.png)
-
-**Сервер (Продвинутое)**
-*MTP, спекулятивное декодирование, YARN/Rope.*
-
-![Server Advanced](screenshots/server-advanced.png)
-
-**Сервер (Подключение)**
-*Host, Port, Timeout, Slots для подключения к серверу.*
-
-![Server Connect](screenshots/server-connect.png)
-
-**Логи**
-*Вывод логов сервера в реальном времени.*
+### Logs, settings and support
 
 ![Logs](screenshots/logs.png)
-
-**Настройки**
-*Язык, пути, тема, сворачивание в трей, автозапуск.*
-
 ![Settings](screenshots/settings.png)
-
-**Обсуждение и поддержка**
-*Ссылка на Telegram канал, вдохновитель проекта.*
-
 ![Support](screenshots/support.png)
 
-**Плавающее окно мониторинга**
-*Компактный мониторинг поверх других окон.*
+## Installation
 
-![Floating Window](screenshots/floating-window.png)
+1. Open the [latest release](https://github.com/satspace-cpu/llamastudio/releases/latest).
+2. Download `LlamaStudio.exe`.
+3. Run it on Windows 10/11 x64.
+4. Select the llama.cpp server folder and model folder in the application settings.
+5. Create or select a profile and start the server.
 
----
+The release is self-contained and does not require installing .NET Desktop Runtime separately.
 
-## 📖 Подробное руководство по настройкам
+## Updating
 
-### 🖥 Сервер — Модель
+The application checks the public `latest.json` file, compares the installed version with the available version, downloads the new `LlamaStudio.exe`, and replaces it after confirmation and restart. The update manifest is changed only together with an approved public release.
 
-⚙️ **Путь к llama.cpp серверу** — папка с распакованной сборкой llama.cpp (например `b9570-cuda12x`). Кнопка **«Выбрать папку...»** открывает диалог выбора. Приложение автоматически найдёт `llama-server.exe` внутри этой папки.
+## Localization / Локализация
 
-🔍 **Проверить версию** — отправляет запрос к `llama-server.exe --version` и показывает текущую версию сборки. Полезно убедиться, что нужный релиз установлен и работает.
+The interface and release notes are provided in **English and Russian**.
 
-🏁 **Проверить флаги** — показывает список компиляционных флагов сборки (CUDA, Vulkan, Metal и т.д.). Помогает понять, какие ускорения поддерживает ваша сборка. Например, если флаг `GGML_CUDA` отсутствует — сборка не поддерживает GPU NVIDIA.
+Интерфейс и описания релизов поддерживают **английский и русский языки**.
 
-🤖 **Основная модель (-m)** — путь к `.gguf` файлу модели. Кнопка **«Обзор...»** открывает диалог выбора файла. Под полем отображается имя модели, извлечённое из файла.
+## Building from the private source repository
 
-👁 **mmproj (Зрение)** — опциональная модель для обработки изображений. Требуется только для мультимодальных моделей (например, Qwen-VL). Без неё модель не сможет "видеть" картинки.
+The public repository contains the application page, documentation, screenshots and release assets. The development source is kept in the private repository for backup and continued development.
 
-⚡ **Черновая модель (Спекулятивное декодирование)** — маленькая быстрая модель, которая предсказывает токены заранее. Основная модель затем подтверждает или отвергает предсказания. Ускоряет генерацию на 20-40%, но требует дополнительной памяти.
+The self-contained Windows build is produced with .NET 8:
 
----
-
-### 🎮 Сервер — GPU
-
-🧠 **Слои GPU (-ngl)** — количество слоёв модели, загружаемых на видеокарту. Значение `all` = все слои на GPU (максимальная скорость). Чем больше слоёв на GPU, тем быстрее генерация, но выше потребление VRAM. Если VRAM не хватает — уменьшите это значение.
-
-🔄 **Потоки (-t)** — количество потоков CPU для вычислений. Значение `-1` = автоопределение (все ядра). Для больших моделей рекомендуется оставить `-1`.
-
-📦 **Потоков в батче (-tb)** — потоки для обработки батча. `-1` = авто. Влияет на скорость обработки промпта.
-
-🎯 **Основной GPU (-mg)** — номер GPU, используемого как основной (0 = первая карта). Актуально для систем с несколькими видеокартами.
-
-⚡ **Flash Attention (-fa)** — алгоритм ускорения внимания. **Рекомендуется включить** — снижает потребление VRAM и ускоряет генерацию. Работает на CUDA/Vulkan.
-
-💾 **Карта памяти (--mmap)** — позволяет операционной системе кэшировать модель на диске. **Рекомендуется включить** — ускоряет загрузку модели. Если отключить — модель будет загружаться полностью в RAM.
-
-🔒 **Mlock (-mlock)** — блокирует модель в оперативной памяти, предотвращая выгрузку на диск. Полезно, если у вас много RAM и вы хотите избежать подкачки.
-
-📊 **MMQ (--no-mmq)** — отключение Multi-Modal Query. Включено по умолчанию для лучшей производительности.
-
-📡 **KV Offload (-nkvo)** — отключение выгрузки KV-кэша на CPU. Рекомендуется оставить включённым для максимальной скорости.
-
-🗂 **Тип кэша K/V (-ctk/-ctv)** — тип квантования KV-кэша. `q8_0` = высокое качество, больше памяти. `q4_0` = меньше памяти, чуть ниже качество. Для больших контекстов можно снизить до `q4_0` для экономии VRAM.
-
-💿 **Кэш RAM (MiB) (--cache-ram)** — объём RAM, выделяемый под кэш модели. По умолчанию 24000 MiB (~23 ГБ). Увеличьте, если модель долго загружается.
-
-♻️ **Переиспользование кэша токенов (--cache-reuse)** — количество токенов для переиспользования кэша. 256 = оптимально для большинства случаев.
-
----
-
-### 🔧 Сервер — Контекст и сэмплинг
-
-📏 **Контекст (-c)** — максимальный размер контекстного окна модели. 150000 = очень большой контекст. Чем больше, тем больше VRAM/RAM потребуется. Стандартные значения: 4096, 8192, 32768, 131072.
-
-📦 **Батч (-b)** — размер батча для обработки промпта. 2048 = хорошо для большинства моделей. Увеличение ускоряет обработку длинных промптов.
-
-⚡ **U-батч (-ub)** — размер микро-батча. 512 = баланс между скоростью и потреблением памяти.
-
-🔢 **Макс токенов (-n)** - максимальное количество генерируемых токенов в одном ответе. `-1` = без ограничения.
-
-🌡 **Температура (--temp)** — случайность генерации. 0.3 = детерминированный ответ, 1.0 = креативный. Для кодирования и фактов — 0.1-0.4. Для творчества — 0.7-1.2.
-
-📊 **Top-P (--top-p)** — ядерное сэмплирование. 0.95 = модель выбирает из топ-95% вероятных токенов. Снижение делает ответы более предсказуемыми.
-
-🔝 **Top-K (--top-k)** — ограничение на количество кандидатов. 40 = модель рассматривает только 40 наиболее вероятных токенов. 0 = без ограничения.
-
-📉 **Min-P (--min-p)** — минимальная вероятность токена. 0.05 = токены с вероятностью ниже 5% игнорируются. Хорошая альтернатива Top-K.
-
-📐 **Typical-P (--typical-p)** — типичное сэмплирование. 1.0 = отключено. Снижение делает текст более "типичным" для модели.
-
-🔁 **Штраф за повтор (--repeat-penalty)** — наказание за повторяющиеся фразы. 1.05 = лёгкое наказание. Увеличение снижает повторения, но может сделать текст менее связным.
-
----
-
-### 🚀 Сервер — Продвинутое
-
-🧩 **MTP / Много-токенное предсказание** — экспериментальная функция для ускорения генерации. Модель предсказывает несколько токенов одновременно.
-
-📋 **Тип спекуляции (--spec-type)** — `draft-mtp` = использование черновой модели с MTP. Требует поддержки со стороны основной модели.
-
-📏 **Макс токенов (-n)** — `-1` = без ограничения.
-
-🎯 **Параметры спекулятивного черновика:**
-- **Слои GPU черновика (-ngld)** — сколько слоёв черновой модели загрузить на GPU.
-- **Черновик N макс (--spec-draft-n-max)** — макс токенов за одну спекуляцию. 3 = оптимально.
-- **Черновик N мин (--spec-draft-n-min)** — мин токенов для спекуляции. 0 = всегда спекулировать.
-- **Черновик P разд (--spec-draft-p-split)** — порог разделения спекуляции. 0.10 = агрессивный режим.
-- **Черновик P мин (--spec-draft-p-min)** — минимальная вероятность для принятия спекуляции. 0.00 = принимать всё.
-
-📐 **YARN / Масштабирование Rope** — техника расширения контекста за пределы тренировочного размера модели.
-
-🔢 **Частота Rope база (--rope-freq-base)** — базовая частота позиционного кодирования. e.g. 10000 = стандарт для LLaMA. Изменение влияет на качество длинного контекста.
-
----
-
-### 🔌 Сервер — Подключение
-
-🌐 **Хост (-host)** — IP-адрес для прослушивания. `0.0.0.0` = доступен из сети. `127.0.0.1` = только локальный доступ.
-
-🔢 **Порт (-port)** — порт сервера. `8080` = стандарт. Можно изменить, если порт занят.
-
-⏱ **Таймаут (-t)** — таймаут соединения в миллисекундах. `3600` = 3.6 секунды. Увеличьте, если сервер долго отвечает.
-
-📊 **Слоты (-sp)** — количество одновременных слотов для обработки запросов. `-1` = автоопределение.
-
-✅ **Запустить** — запускает сервер с текущими настройками профиля.
-
-🛑 **Остановить** — останавливает работающий сервер.
-
----
-
-### 📊 Мониторинг
-
-📈 **Ответ / Промпт** — текущая скорость генерации в токенах в секунду. "Ответ" — скорость вывода модели, "Промпт" — скорость обработки входного текста.
-
-🎚 **Ползунки видимости метрик:**
-- **Всегда сверху** — плавающее окно остаётся поверх других окон.
-- **VRAM** — отображение использования видеопамяти.
-- **ОЗУ** — отображение использования оперативной памяти.
-- **Темп. GPU** — температура видеокарты.
-- **Мощность** — потребление энергии GPU (Вт).
-- **Ядро GPU** — загрузка видеоядра (%).
-
-🎨 **Стиль отображения** — выбор темы для плавающего окна мониторинга.
-
----
-
-### 📋 Логи
-
-📄 **Автопрокрутка** — автоматически прокручивает лог к новым записям.
-
-🧹 **Очистить** — очищает текущий вывод логов.
-
-📋 **Копировать** — копирует весь текст логов в буфер обмена.
-
-💾 **Сохранить** — сохраняет логи в файл для последующего анализа.
-
----
-
-### ⚙️ Настройки
-
-🌍 **Язык** — выбор языка интерфейса (RU/EN).
-
-📁 **Пути:**
-- **Корневая папка llama.cpp** — базовая директория для установок llama.cpp.
-- **llama.cpp** — путь к активной сборке сервера.
-- **Модели** — папка с `.gguf` файлами моделей.
-
-🔄 **Автопроверка обновлений** — при запуске проверяет наличие новых версий приложения и llama.cpp.
-
-📦 **Сворачивать в трей при закрытии** — вместо закрытия программа сворачивается в системный трей. Сервер продолжает работать.
-
-🚀 **Запускать свёрнутым в трей** — при старте программа сразу сворачивается в трей (без открытия главного окна).
-
-🔁 **Автозапуск с Windows** — программа запускается вместе с системой.
-
-📊 **Запускать окно мониторинга** — при старте автоматически открывается плавающее окно мониторинга.
-
-💾 **Не выгружать сервер при закрытии** — сервер продолжает работать после закрытия программы. Полезно, если вы хотите оставить сервер доступным для других приложений.
-
-🎨 **Тема** — выбор цветовой схемы (Dark/Light).
-
-📡 **Канал обновлений** — выбор канала получения обновлений (Stable/Beta).
-
----
-
-## 🚀 Установка
-
-1.  Скачайте последнюю версию с вкладки **Releases**.
-2.  Распакуйте архив или сразу запустите `LlamaStudio.exe`.
-3.  Укажите путь к папке с `llama.cpp` и моделями в настройках.
-4.  Готово!
-
-## ⚙️ Системные требования
-
-*   **OS:** Windows 10/11 (x64)
-*   **GPU:** NVIDIA (рекомендуется для CUDA) или AMD/Intel (Vulkan)
-*   **RAM:** Минимум 16 ГБ (зависит от размера модели)
-*   **.NET Runtime:** Не требуется (приложение самодостаточное)
-
-## 🛠 Для разработчиков
-
-Проект написан на **C# (.NET 8)** с использованием **Avalonia UI**.
-
-```bash
-# Сборка проекта
-dotnet build src/LlamaStudio/LlamaStudio.csproj
-
-# Публикация в один exe файл
-dotnet publish src/LlamaStudio/LlamaStudio.csproj -c Release -r win-x64 --self-contained true -o publish/win-x64
+```powershell
+dotnet publish .\LlamaStudio.csproj -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:DebugType=None -p:DebugSymbols=false
 ```
 
-## 📜 Лицензия
+The final public release must contain one asset only: `LlamaStudio.exe`.
 
-MIT License
+## Release notes
 
-## 📞 Поддержка
+Release notes are written in Russian and English and include changes to the dashboard, monitoring, Multi-GPU, profiles, downloads, server backends, speed measurement, localization and update behavior.
 
-*   Telegram канал: [Llama Studio App](https://t.me/LlamaStudioApp)
-*   Обсуждение и баги: [Discussions](https://github.com/satspace-cpu/llamastudio/discussions)
+See the [release history](https://github.com/satspace-cpu/llamastudio/releases).
+
+## Support
+
+- [GitHub Discussions](https://github.com/satspace-cpu/llamastudio/discussions)
+- [Telegram community](https://t.me/LlamaStudioApp)
+
+## License
+
+MIT License.
