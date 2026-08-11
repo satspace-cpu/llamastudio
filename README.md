@@ -4,6 +4,10 @@
 
 The public package is deliberately simple: download one `LlamaStudio.exe` from [Releases](https://github.com/satspace-cpu/llamastudio/releases) and run it. The current screenshots below were captured from the Llama Studio 1.3.0 English build with two GPUs available: NVIDIA GeForce RTX 5090 and Tesla V100.
 
+## Benchmarks
+
+- [RTX 5090 + Tesla V100 over RPC on 25 GbE](docs/benchmarks/rpc-25gbe/README.en.md) · [Русская версия](docs/benchmarks/rpc-25gbe/README.md)
+
 ## What It Does
 
 - Start, stop and restart a local llama.cpp server.
