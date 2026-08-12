@@ -7,6 +7,7 @@ The public package is deliberately simple: download one `LlamaStudio.exe` from [
 ## Benchmarks
 
 - [RTX 5090 + Tesla V100 over RPC on 25 GbE](docs/benchmarks/rpc-25gbe/README.en.md) · [Русская версия](docs/benchmarks/rpc-25gbe/README.md)
+- [Clarification: PCIe vs TCP vs RDMA with Qwen3.6-27B](docs/benchmarks/qwen-transport/README.en.md) · [Русская версия](docs/benchmarks/qwen-transport/README.md)
 
 ## What It Does
 

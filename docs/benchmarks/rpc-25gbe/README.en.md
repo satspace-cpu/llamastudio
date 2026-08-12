@@ -2,6 +2,8 @@
 
 [Русская версия](README.md)
 
+> **Clarification:** additional PCIe, TCP and RDMA measurements for Qwen3.6-27B are available in a [separate supplement](../qwen-transport/README.en.md).
+
 A practical GGUF inference benchmark for llama.cpp/LlamaStudio. It compares a local RTX 5090 run with a distributed run that places part of the model on a remote Tesla V100 through RPC over a dedicated 25 GbE Ethernet link.
 
 > Measurements and article by the LlamaStudio author (`satspace-cpu`). This is a report about one practical configuration, not a universal GPU or NIC ranking.
