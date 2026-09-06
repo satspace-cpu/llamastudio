@@ -1,6 +1,7 @@
 {
-  "version": "1.4.0",
-  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.4.0/LlamaStudio.exe",
-  "publishedAt": "2026-07-30T13:01:36Z",
-  "changelog": "Llama Studio 1.4.0: Remote RPC over SSH, remote GPU telemetry via nvidia-smi, multi-GPU and tensor-split improvements, profile persistence fixes, and monitoring stability fixes."
+  "version": "1.4.1",
+  "downloadUrl": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.4.1/LlamaStudio.exe",
+  "downloadUrlLinux": "https://github.com/satspace-cpu/llamastudio/releases/download/v1.4.1/LlamaStudio-1.4.1-linux-x64.tar.gz",
+  "publishedAt": "2026-09-06T14:40:00Z",
+  "changelog": "Llama Studio 1.4.1: Windows is now a single self-contained EXE; Linux release (tar.gz) with the full application; built-in auto-update on both platforms (Windows replaces the single EXE, Linux swaps the installation folder with rollback); fixed minimize-to-tray and start-minimized on Windows; floating monitor window settings now persist; official llama.cpp builds only on the releases page."
 }
