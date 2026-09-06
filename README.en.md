@@ -1,3 +1,5 @@
+**[Русский](README.md)** · **[English](README.en.md)**
+
 # Llama Studio
 
 **Llama Studio** is a manager for local GGUF models and [llama.cpp](https://github.com/ggml-org/llama.cpp) servers. One application: it starts and controls `llama-server`, manages model profiles, GPU distribution, Hugging Face model downloads and llama.cpp builds.
@@ -6,8 +8,6 @@ The interface is dark-themed, available in **English and Russian**. It works in 
 
 - **Desktop** (Avalonia) — the regular application window (Windows and Linux);
 - **Web interface** — a built-in server reachable from any browser over the network (default `http://<server-ip>:8090`). The web pages are identical to the desktop pages; the screenshots in this guide are of the web interface.
-
- [Русская версия](README.md)
 
 ## Contents
 
