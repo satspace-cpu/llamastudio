@@ -373,4 +373,4 @@ Linux: download the new archive from [Releases](https://github.com/satspace-cpu/
 
 ---
 
-*Draft of the user guide. Web screenshots were taken from a live installation (Linux, 2× NVIDIA CMP 170HX). Desktop window screenshots will be added before release.*
+
