@@ -1,0 +1,29 @@
+# Build products — regenerate from source
+**/bin/
+**/obj/
+**/bin-linux/
+**/obj-linux/
+build/
+artifacts/
+
+# llama.cpp source/build caches and locally installed server versions
+.llama-studio-source/
+.build-cache/
+llama_linux/
+models/
+*.gguf
+*.gguf.*
+
+# Runtime data, credentials and logs
+settings.json
+*profiles*.json
+*.log
+*.pdb
+*.user
+.vs/
+.vscode/
+
+# OS/editor files
+*.swp
+*~
+.DS_Store

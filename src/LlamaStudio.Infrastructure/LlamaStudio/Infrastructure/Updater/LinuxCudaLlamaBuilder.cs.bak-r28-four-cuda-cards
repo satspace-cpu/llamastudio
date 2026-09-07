@@ -1,0 +1,336 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using LlamaStudio.Core.Interfaces;
+using LlamaStudio.Core.Models;
+
+namespace LlamaStudio.Infrastructure.Updater;
+
+/// <summary>
+/// Builds an official llama.cpp release on Linux when the release does not
+/// publish a Linux CUDA binary. A local build detects installed NVIDIA
+/// architectures; the universal build targets all supported architectures.
+/// </summary>
+internal static class LinuxCudaLlamaBuilder
+{
+	internal const string LocalAssetPrefix = "llama-studio-build-linux-cuda-rpc-local-";
+	internal const string UniversalAssetPrefix = "llama-studio-build-linux-cuda-rpc-universal-";
+
+	/// <summary>Returns the CUDA family of the toolkit that will actually be used for a local build.</summary>
+	internal static BuildType DetectInstalledCudaBuildType()
+	{
+		try
+		{
+			string major = DetectCudaMajorFromPath(ResolveCudaBinDirectory(string.Empty));
+			return major == "13" ? BuildType.Cuda13x : BuildType.Cuda12x;
+		}
+		catch
+		{
+			// The detailed installer will report a missing toolkit. Keep the release
+			// card visible rather than hiding it because of an early probe failure.
+			return BuildType.Cuda12x;
+		}
+	}
+
+    public static async Task<string> BuildAsync(
+        string version,
+        string targetDirectory,
+        string assetName,
+        Action<string> reportStatus,
+        ILogService log,
+        CancellationToken cancellationToken)
+    {
+        if (!OperatingSystem.IsLinux())
+            throw new PlatformNotSupportedException("Local CUDA builds are available only on Linux.");
+        // llama.cpp has used both rolling build tags (bNNNNN) and semantic
+        // release tags (for example v0.2.0).  A local CUDA build checks out
+        // the tag from Git, so accept both formats while still rejecting an
+        // arbitrary ref supplied through the UI.
+        if (!Regex.IsMatch(version, "^(?:master|b[0-9]+|v[0-9]+(?:\\.[0-9]+){1,3}(?:[-+][0-9A-Za-z][0-9A-Za-z._-]*)?)$", RegexOptions.CultureInvariant))
+            throw new InvalidOperationException("Unsupported llama.cpp release tag: " + version + ". Supported formats: bNNNNN, vX.Y.Z, master.");
+
+        bool localGpuBuild = assetName.StartsWith(LocalAssetPrefix, StringComparison.Ordinal);
+        if (!localGpuBuild && !assetName.StartsWith(UniversalAssetPrefix, StringComparison.Ordinal))
+            throw new InvalidOperationException("Unknown Linux CUDA build type.");
+
+
+		string cudaBinDirectory = ResolveCudaBinDirectory(targetDirectory);
+		string hostCompiler = ResolveHostCompiler();
+		string nvccExecutable = Path.Combine(cudaBinDirectory, "nvcc");
+		string cudaMajor = await DetectCudaMajorAsync(nvccExecutable, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+		string cudaFolderLabel = cudaMajor == "13" ? "cuda13x" : "cuda12x";
+		reportStatus("CUDA " + cudaMajor + " toolkit: " + nvccExecutable);
+        await RunAsync("git", "--version", reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+        await RunAsync("cmake", "--version", reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+        await RunAsync("ninja", "--version", reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+
+        string architectures = localGpuBuild
+            ? await DetectInstalledCudaArchitecturesAsync(reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false)
+            : "all";
+        string buildScope = localGpuBuild ? "local" : "universal";
+		// The install directory is part of the persisted profile identity.  Do not
+		// hard-code CUDA 12 here: CUDA 13 builds must remain distinguishable in the
+		// version picker and the active-version cache.
+		string folderSuffix = localGpuBuild ? "-" + cudaFolderLabel + "-local-sm" + architectures.Replace(";", "-sm", StringComparison.Ordinal) : "-" + cudaFolderLabel;
+
+
+        Directory.CreateDirectory(targetDirectory);
+        string sourceRoot = Path.Combine(targetDirectory, ".llama-studio-source");
+        string sourceDirectory = Path.Combine(sourceRoot, version);
+        string buildDirectory = Path.Combine(sourceDirectory, "build-cuda-rpc-" + buildScope + "-" + architectures.Replace(";", "-", StringComparison.Ordinal));
+        string installDirectory = Path.Combine(targetDirectory, version + folderSuffix);
+        string stagingDirectory = Path.Combine(targetDirectory, ".llama-studio-build-" + Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            if (!Directory.Exists(sourceDirectory))
+            {
+                Directory.CreateDirectory(sourceRoot);
+                reportStatus("Downloading llama.cpp source " + version + "...");
+                await RunAsync("git", $"clone --depth 1 --branch {version} https://github.com/ggml-org/llama.cpp.git {Quote(sourceDirectory)}", reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+            }
+            else
+            {
+                reportStatus("Using cached llama.cpp source " + version + "...");
+            }
+
+            string cacheFile = Path.Combine(buildDirectory, "CMakeCache.txt");
+            if (File.Exists(cacheFile) && !File.ReadAllText(cacheFile).Contains(nvccExecutable, StringComparison.Ordinal))
+            {
+                reportStatus("CUDA toolkit changed; resetting incompatible build cache...");
+                Directory.Delete(buildDirectory, recursive: true);
+            }
+            reportStatus(localGpuBuild ? "Configuring CUDA + RPC build for detected GPUs (SM " + architectures.Replace(";", ", SM ", StringComparison.Ordinal) + ")..." : "Configuring universal NVIDIA CUDA + RPC build...");
+            await RunAsync("cmake",
+                $"-S {Quote(sourceDirectory)} -B {Quote(buildDirectory)} -G Ninja " +
+                "-DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_RPC=ON " +
+                $"-DCMAKE_CUDA_ARCHITECTURES={architectures} -DCMAKE_CUDA_HOST_COMPILER={Quote(hostCompiler)} -DCMAKE_CXX_COMPILER={Quote(hostCompiler)} -DCMAKE_C_COMPILER={Quote(hostCompiler.Replace("g++", "gcc"))} -DGGML_BUILD_TESTS=OFF -DLLAMA_BUILD_SERVER=ON " +
+                "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON -DCMAKE_BUILD_RPATH=$ORIGIN",
+                reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+
+            reportStatus(localGpuBuild ? "Compiling CUDA + RPC build for detected GPUs (this can take several minutes)..." : "Compiling universal NVIDIA CUDA + RPC build (this can take several minutes)...");
+            await RunAsync("cmake", $"--build {Quote(buildDirectory)} --config Release --parallel", reportStatus, log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+
+            string binaryDirectory = Path.Combine(buildDirectory, "bin");
+            string serverExecutable = Path.Combine(binaryDirectory, "llama-server");
+            if (!File.Exists(serverExecutable))
+                throw new InvalidOperationException("llama-server was not created by the CUDA build.");
+
+            reportStatus("Installing compiled version...");
+            Directory.CreateDirectory(stagingDirectory);
+            CopyDirectory(binaryDirectory, stagingDirectory);
+            string libraryDirectory = Path.Combine(buildDirectory, "lib");
+            if (Directory.Exists(libraryDirectory))
+                CopyDirectory(libraryDirectory, Path.Combine(stagingDirectory, "lib"));
+
+            string stagedServer = Path.Combine(stagingDirectory, "llama-server");
+            if (!File.Exists(stagedServer))
+                throw new InvalidOperationException("Compiled llama-server is missing from the installation stage.");
+
+            if (Directory.Exists(installDirectory))
+                Directory.Delete(installDirectory, recursive: true);
+            Directory.Move(stagingDirectory, installDirectory);
+            reportStatus("CUDA + RPC build installed: " + version);
+            log.Information($"Built llama.cpp {version} with CUDA architectures {architectures} and RPC at {installDirectory}", "Updater");
+            return installDirectory;
+        }
+        finally
+        {
+            if (Directory.Exists(stagingDirectory))
+            {
+                try { Directory.Delete(stagingDirectory, recursive: true); }
+                catch { }
+            }
+        }
+    }
+
+	private static async Task<string> DetectInstalledCudaArchitecturesAsync(Action<string> reportStatus, ILogService log, CancellationToken cancellationToken, string cudaBinDirectory)
+    {
+        reportStatus("Detecting installed NVIDIA GPU architectures...");
+        string output = await RunCaptureAsync("nvidia-smi", "--query-gpu=compute_cap --format=csv,noheader", log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+        string[] architectures = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(value => Regex.Match(value, @"(?<!\d)(\d+)\.(\d+)"))
+            .Where(match => match.Success)
+            .Select(match => match.Groups[1].Value + match.Groups[2].Value)
+            .Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        if (architectures.Length == 0)
+            throw new InvalidOperationException("No CUDA-capable NVIDIA GPUs were detected. Use the universal CUDA build or check the NVIDIA driver.");
+        string result = string.Join(";", architectures);
+        reportStatus("Detected CUDA architectures: SM " + string.Join(", SM ", architectures));
+        return result;
+	}
+
+	private static async Task<string> DetectCudaMajorAsync(string nvccExecutable, ILogService log, CancellationToken cancellationToken, string cudaBinDirectory)
+	{
+		string byPath = DetectCudaMajorFromPath(cudaBinDirectory);
+		if (!string.IsNullOrEmpty(byPath)) return byPath;
+		string output = await RunCaptureAsync(nvccExecutable, "--version", log, cancellationToken, cudaBinDirectory).ConfigureAwait(false);
+		Match match = Regex.Match(output, @"\brelease\s+(?<major>\d+)\.", RegexOptions.IgnoreCase);
+		if (match.Success) return match.Groups["major"].Value;
+		throw new InvalidOperationException("Cannot determine the CUDA toolkit version from nvcc.");
+	}
+
+	private static string DetectCudaMajorFromPath(string cudaBinDirectory)
+	{
+		try
+		{
+			string path = cudaBinDirectory;
+			FileSystemInfo? target = new FileInfo(Path.Combine(cudaBinDirectory, "nvcc")).ResolveLinkTarget(returnFinalTarget: true);
+			if (target is not null) path = target.FullName;
+			Match match = Regex.Match(path, @"cuda[-_](?<major>\d+)", RegexOptions.IgnoreCase);
+			return match.Success ? match.Groups["major"].Value : string.Empty;
+		}
+		catch
+		{
+			return string.Empty;
+		}
+	}
+
+    private static async Task<string> RunCaptureAsync(string fileName, string arguments, ILogService log, CancellationToken cancellationToken, string cudaBinDirectory)
+    {
+        var startInfo = CreateStartInfo(fileName, arguments, cudaBinDirectory);
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        string output = await outputTask.ConfigureAwait(false);
+        string error = await errorTask.ConfigureAwait(false);
+        if (process.ExitCode != 0)
+        {
+            log.Error($"{fileName} {arguments} failed: {error}", "Updater");
+            throw new InvalidOperationException($"{fileName} failed with code {process.ExitCode}: {error}");
+        }
+        return output;
+    }
+
+
+    private static async Task RunAsync(string fileName, string arguments, Action<string> reportStatus, ILogService log, CancellationToken cancellationToken, string cudaBinDirectory)
+    {
+        var startInfo = CreateStartInfo(fileName, arguments, cudaBinDirectory);
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+        var started = Stopwatch.StartNew();
+        using var heartbeatCts = new CancellationTokenSource();
+        Task heartbeat = Task.Run(async () =>
+        {
+            try
+            {
+                while (!heartbeatCts.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), heartbeatCts.Token).ConfigureAwait(false);
+                    if (!process.HasExited)
+                        reportStatus($"Running {Path.GetFileName(fileName)} · elapsed {started.Elapsed.ToString(@"mm\:ss")}");
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            heartbeatCts.Cancel();
+            await heartbeat.ConfigureAwait(false);
+        }
+        string output = await outputTask.ConfigureAwait(false);
+        string error = await errorTask.ConfigureAwait(false);
+        if (process.ExitCode == 0)
+            return;
+
+        string details = string.Join(Environment.NewLine, (output + Environment.NewLine + error)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .TakeLast(20));
+        log.Error($"{fileName} {arguments} failed: {details}", "Updater");
+        throw new InvalidOperationException($"{fileName} failed with code {process.ExitCode}: {details}");
+    }
+
+
+    private static ProcessStartInfo CreateStartInfo(string fileName, string arguments, string cudaBinDirectory)
+    {
+        var startInfo = new ProcessStartInfo(fileName, arguments)
+        {
+            UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true
+        };
+        string cudaHome = Directory.GetParent(cudaBinDirectory)!.FullName;
+        string existingPath = Environment.GetEnvironmentVariable("PATH") ?? "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+        startInfo.Environment["PATH"] = cudaBinDirectory + Path.PathSeparator + existingPath;
+        startInfo.Environment["CUDA_HOME"] = cudaHome;
+        startInfo.Environment["CUDA_PATH"] = cudaHome;
+        startInfo.Environment["CUDACXX"] = Path.Combine(cudaBinDirectory, "nvcc");
+        return startInfo;
+    }
+
+    private static string ResolveCudaBinDirectory(string targetDirectory)
+    {
+        string[] candidates =
+        {
+            Environment.GetEnvironmentVariable("CUDA_HOME") ?? string.Empty,
+            Environment.GetEnvironmentVariable("CUDA_PATH") ?? string.Empty,
+            Path.Combine(targetDirectory, ".build-cache", "cuda-env"),
+            Path.Combine(targetDirectory, ".build-cache", "cuda-env-12.8"),
+            "/usr/local/cuda"
+        };
+        foreach (string candidate in candidates.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            string binDirectory = Path.Combine(candidate, "bin");
+            if (File.Exists(Path.Combine(binDirectory, "nvcc"))) return binDirectory;
+        }
+        if (Directory.Exists("/usr/local"))
+        {
+            string? discovered = Directory.GetDirectories("/usr/local", "cuda-*")
+                .OrderByDescending(path => path, StringComparer.Ordinal)
+                .Select(path => Path.Combine(path, "bin"))
+                .FirstOrDefault(path => File.Exists(Path.Combine(path, "nvcc")));
+            if (discovered is not null) return discovered;
+        }
+        throw new InvalidOperationException("?????????? CUDA nvcc ?? ??????.");
+    }
+
+    private static string ResolveHostCompiler()
+    {
+        foreach (string name in new[] { "g++-13", "g++-12", "g++-11", "g++-10", "g++" })
+        {
+            string? path = FindExecutable(name);
+            if (path is not null) return path;
+        }
+        throw new InvalidOperationException("A compatible C++ compiler is required. Install g++-13 or set CXX.");
+    }
+
+    private static string? FindExecutable(string name)
+    {
+        foreach (string directory in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            string candidate = Path.Combine(directory, name);
+            if (File.Exists(candidate)) return candidate;
+        }
+        foreach (string directory in new[] { "/usr/bin", "/usr/local/bin" })
+        {
+            string candidate = Path.Combine(directory, name);
+            if (File.Exists(candidate)) return candidate;
+        }
+        return null;
+    }
+
+    private static string Quote(string value) => "\"" + value.Replace("\"", "\\\"") + "\"";
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (string directory in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
+            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
+        foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string destinationFile = Path.Combine(destination, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+            File.Copy(file, destinationFile, overwrite: true);
+        }
+    }
+}

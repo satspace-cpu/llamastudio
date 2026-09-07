@@ -1,0 +1,180 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using LlamaStudio.Core.Interfaces;
+using LlamaStudio.Core.Models;
+
+namespace LlamaStudio.Infrastructure.Llama;
+
+public class VersionDetector : IVersionDetector
+{
+	private readonly ILogService _log;
+
+	public VersionDetector(ILogService log)
+	{
+		_log = log;
+	}
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern uint SetErrorMode(uint uMode);
+
+	public async Task<VersionInfo?> DetectAsync(string directory, CancellationToken ct = default(CancellationToken))
+	{
+		string text = Path.Combine(directory, OperatingSystem.IsWindows() ? "llama-server.exe" : "llama-server");
+		if (!File.Exists(text))
+		{
+			return null;
+		}
+		string folderName = Path.GetFileName(directory);
+		// llama.cpp moved from rolling bNNNNN builds to semantic tags such as
+		// v0.2.0.  The folder is the reliable release identity for locally built
+		// Linux CUDA/RPC versions, because --version reports a generic build 1.
+		Match folderMatch = Regex.Match(folderName, @"^(?<tag>b\d+|v\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z][0-9A-Za-z._-]*)?)", RegexOptions.IgnoreCase);
+		(string, string) obj = await GetVersionFromExeAsync(text, ct);
+		// Folder names created by LlamaStudio preserve the actual release tag
+		// (for example b10361-cuda12x). Prefer it over llama.cpp's generic
+		// "version: 1 (b10361)" banner.
+		string text2 = folderMatch.Success ? folderMatch.Groups["tag"].Value.ToLowerInvariant() : obj.Item1;
+		string item = obj.Item2;
+		string buildType = DetectBuildTypeFromDlls(directory);
+		if (string.IsNullOrEmpty(text2))
+		{
+			_log.Warning("Cannot determine version for " + directory + " (--version failed, folder name doesn't match pattern)", "VersionDetector");
+			return null;
+		}
+		return new VersionInfo
+		{
+			Version = text2,
+			BuildType = buildType,
+			Commit = item,
+			Directory = directory
+		};
+	}
+
+	private async Task<(string version, string commit)> GetVersionFromExeAsync(string exePath, CancellationToken ct)
+	{
+		_ = 2;
+		try
+		{
+			string text = Path.GetDirectoryName(exePath) ?? string.Empty;
+			string text2 = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+			string value = text + Path.PathSeparator + text2;
+			uint oldMode = 0u;
+			if (OperatingSystem.IsWindows())
+			{
+				oldMode = SetErrorMode(2u);
+				SetErrorMode(oldMode | 2);
+			}
+			try
+			{
+				ProcessStartInfo processStartInfo = new ProcessStartInfo
+				{
+					FileName = OperatingSystem.IsWindows() ? "cmd.exe" : exePath,
+					Arguments = OperatingSystem.IsWindows() ? "/c \"" + exePath + "\" --version" : "--version",
+					WorkingDirectory = text,
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					CreateNoWindow = true
+				};
+				foreach (DictionaryEntry environmentVariable in Environment.GetEnvironmentVariables())
+				{
+					processStartInfo.Environment[(string)environmentVariable.Key] = (string)environmentVariable.Value;
+				}
+				processStartInfo.Environment["PATH"] = value;
+				using Process proc = Process.Start(processStartInfo);
+				if (proc == null)
+				{
+					return (version: string.Empty, commit: string.Empty);
+				}
+				using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+				cts.CancelAfter(TimeSpan.FromSeconds(10.0));
+				try
+				{
+					await proc.WaitForExitAsync(cts.Token);
+				}
+				catch (OperationCanceledException)
+				{
+					try
+					{
+						proc.Kill();
+					}
+					catch
+					{
+					}
+					return (version: string.Empty, commit: string.Empty);
+				}
+				string versionOutput = await proc.StandardOutput.ReadToEndAsync() + await proc.StandardError.ReadToEndAsync();
+				Match releaseMatch = Regex.Match(versionOutput, @"\b(v\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z][0-9A-Za-z._-]*)?)\b|\b(b\d+)\b", RegexOptions.IgnoreCase);
+				if (releaseMatch.Success)
+				{
+					return (version: releaseMatch.Value.ToLowerInvariant(), commit: string.Empty);
+				}
+				return (version: string.Empty, commit: string.Empty);
+			}
+			finally
+			{
+				if (OperatingSystem.IsWindows())
+				{
+					SetErrorMode(oldMode);
+				}
+			}
+		}
+		catch (Exception ex2)
+		{
+			_log.Warning("Failed to detect version from " + exePath + ": " + ex2.Message, "VersionDetector");
+			return (version: string.Empty, commit: string.Empty);
+		}
+	}
+
+	private static string DetectBuildTypeFromDlls(string directory)
+	{
+		try
+		{
+			// On Linux libcudart is often supplied by the system and does not live
+			// beside llama-server.  Preserve the selected CUDA toolkit from the
+			// folder name created by the installer before falling back to libraries.
+			string folderName = Path.GetFileName(directory).ToLowerInvariant();
+			if (folderName.Contains("cuda13"))
+			{
+				return "Cuda13x";
+			}
+			if (folderName.Contains("cuda12"))
+			{
+				return "Cuda12x";
+			}
+			IEnumerable<string> source = Directory.GetFiles(directory, OperatingSystem.IsWindows() ? "*.dll" : "*", SearchOption.AllDirectories)
+				.Select(Path.GetFileName)
+				.Where((string? name) => !string.IsNullOrWhiteSpace(name))
+				.Select((string name) => name.ToLowerInvariant());
+			if (source.Any((string n) => n.Contains("cudart64_13")))
+			{
+				return "Cuda13x";
+			}
+			if (source.Any((string n) => n.Contains("cudart64_12") || n.Contains("libggml-cuda") || n.Contains("ggml-cuda")))
+			{
+				return "Cuda12x";
+			}
+			if (source.Any((string n) => n.Contains("ggml-vulkan") || n.Contains("vulkan-1")))
+			{
+				return "Vulkan";
+			}
+			if (source.Any((string n) => n.Contains("cudart") || n.Contains("cublas")))
+			{
+				return "Cuda";
+			}
+			return "CPU";
+		}
+		catch
+		{
+			return "Unknown";
+		}
+	}
+}

@@ -1,0 +1,597 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using LlamaStudio.Core.Enums;
+using LlamaStudio.Core.Interfaces;
+using LlamaStudio.Core.Models;
+
+namespace LlamaStudio.Infrastructure.Profiles;
+
+public class ProfileManager : IProfileManager
+{
+	private readonly ISettings _settings;
+
+	private readonly ILogService _log;
+
+	// The desktop client and Web UI can request a save concurrently.  Keep
+	// profile updates ordered, and never write directly over the working JSON.
+	private readonly SemaphoreSlim _profileWriteGate = new SemaphoreSlim(1, 1);
+
+	private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+	{
+		WriteIndented = true,
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+		DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+	};
+
+	public event Action<string>? ProfileChanged;
+
+	public Task NotifyProfileChanged(string profileId)
+	{
+		this.ProfileChanged?.Invoke(profileId);
+		return Task.CompletedTask;
+	}
+
+	public ProfileManager(ISettings settings, ILogService log)
+	{
+		_settings = settings;
+		_log = log;
+	}
+
+	private string GetProfilesDirectory()
+	{
+		string profilesDirectory = Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LlamaStudio"), "profiles");
+		if (!Directory.Exists(profilesDirectory))
+		{
+			Directory.CreateDirectory(profilesDirectory);
+		}
+		return profilesDirectory;
+	}
+
+	private string GetProfilePath(string id)
+	{
+		return Path.Combine(GetProfilesDirectory(), id + ".json");
+	}
+
+	private void WriteProfileAtomically(string profilePath, string contents)
+	{
+		string directoryName = Path.GetDirectoryName(profilePath) ?? GetProfilesDirectory();
+		Directory.CreateDirectory(directoryName);
+		string tempPath = profilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+		try
+		{
+			File.WriteAllText(tempPath, contents, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+			File.Move(tempPath, profilePath, overwrite: true);
+		}
+		finally
+		{
+			if (File.Exists(tempPath))
+			{
+				File.Delete(tempPath);
+			}
+		}
+	}
+
+	private void CleanupDuplicateProfileFiles(IEnumerable<string> files)
+	{
+		foreach (string path in files)
+		{
+			try
+			{
+				bool migrated;
+				ServerProfile? profile = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out migrated), _jsonOptions);
+				if (profile == null || string.IsNullOrWhiteSpace(profile.Id))
+				{
+					continue;
+				}
+				string canonicalPath = GetProfilePath(profile.Id);
+				if (File.Exists(canonicalPath) && !string.Equals(Path.GetFullPath(path), Path.GetFullPath(canonicalPath), StringComparison.OrdinalIgnoreCase))
+				{
+					File.Delete(path);
+					_log.Information("Removed duplicate profile file: " + path, "ProfileManager");
+				}
+			}
+			catch (Exception exception)
+			{
+				_log.Warning("Failed to clean duplicate profile file " + path + ": " + exception.Message, "ProfileManager");
+			}
+		}
+	}
+
+	private static string ReadJsonFile(string path, out bool migrated)
+	{
+		migrated = false;
+		byte[] bytes = File.ReadAllBytes(path);
+		if (bytes.Length >= 3 && bytes[0] == 239 && bytes[1] == 187 && bytes[2] == 191)
+		{
+			return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+		}
+		try
+		{
+			string content = Encoding.UTF8.GetString(bytes);
+			if (!content.Contains('\ufffd'))
+			{
+				return content;
+			}
+		}
+		catch
+		{
+		}
+		migrated = true;
+		return Encoding.Default.GetString(bytes);
+	}
+
+	List<ServerProfile> IProfileManager.GetAllProfiles()
+	{
+		List<ServerProfile> profiles = new List<ServerProfile>();
+		string profilesDirectory = GetProfilesDirectory();
+		if (!Directory.Exists(profilesDirectory))
+		{
+			Directory.CreateDirectory(profilesDirectory);
+		}
+		string[] files = Directory.GetFiles(profilesDirectory, "*.json");
+		foreach (string path in files)
+		{
+			try
+			{
+				bool migrated;
+				ServerProfile serverProfile = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out migrated), _jsonOptions);
+				if (serverProfile != null)
+				{
+					// Older LlamaStudio versions saved the uninitialized value 0.
+					// llama.cpp then selects its automatic parallelism (currently 4),
+					// which unexpectedly multiplies the KV cache. One slot is the safe default.
+					bool slotsMigrated = serverProfile.Slots == 0;
+					bool splitModeMigrated = serverProfile.NormalizeLegacyGpuSplitMode();
+					if (slotsMigrated)
+					{
+						serverProfile.Slots = 1;
+					}
+					profiles.Add(serverProfile);
+					if (migrated || slotsMigrated || splitModeMigrated)
+					{
+						string contents = JsonSerializer.Serialize(serverProfile, _jsonOptions);
+						WriteProfileAtomically(path, contents);
+					}
+				}
+			}
+			catch (Exception exception)
+			{
+				_log.Error(exception, "Failed to load profile: " + path, "ProfileManager");
+			}
+		}
+		CleanupDuplicateProfileFiles(files);
+		if (profiles.Count == 0)
+		{
+			profiles = CreateDefaultProfiles();
+			foreach (ServerProfile profile in profiles)
+			{
+				SaveProfileSync(profile);
+			}
+			_log.Information("Созданы профили по умолчанию", "ProfileManager");
+		}
+		profiles.Sort((ServerProfile a, ServerProfile b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+		return profiles;
+	}
+
+	private void SaveProfileSync(ServerProfile profile)
+	{
+		_profileWriteGate.Wait();
+		try
+		{
+		profile.NormalizeLegacyGpuSplitMode();
+		if (string.IsNullOrEmpty(profile.Id))
+		{
+			profile.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+		}
+		profile.UpdatedAt = DateTime.Now;
+		if (!profile.IsDefault)
+		{
+			string profilesDirectory = GetProfilesDirectory();
+			bool defaultProfileFound = false;
+			if (Directory.Exists(profilesDirectory))
+			{
+				string[] files = Directory.GetFiles(profilesDirectory, "*.json");
+				foreach (string path in files)
+				{
+					try
+					{
+						bool migrated;
+						ServerProfile? serverProfile = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out migrated), _jsonOptions);
+						if (serverProfile != null && serverProfile.IsDefault)
+						{
+							defaultProfileFound = true;
+							break;
+						}
+					}
+					catch
+					{
+					}
+				}
+			}
+			if (!defaultProfileFound)
+			{
+				profile.IsDefault = true;
+			}
+		}
+		string profilePath = GetProfilePath(profile.Id);
+		string contents = JsonSerializer.Serialize(profile, _jsonOptions);
+		WriteProfileAtomically(profilePath, contents);
+		_log.Information($"Saved profile: {profile.Name} ({profile.Id})", "ProfileManager");
+		}
+		finally
+		{
+			_profileWriteGate.Release();
+		}
+	}
+
+	async Task<List<ServerProfile>> IProfileManager.GetAllProfilesAsync()
+	{
+		List<ServerProfile> profiles = new List<ServerProfile>();
+		string profilesDirectory = GetProfilesDirectory();
+		if (!Directory.Exists(profilesDirectory))
+		{
+			Directory.CreateDirectory(profilesDirectory);
+		}
+		string[] files = Directory.GetFiles(profilesDirectory, "*.json");
+		foreach (string path in files)
+		{
+			try
+			{
+				bool migrated;
+				ServerProfile serverProfile = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out migrated), _jsonOptions);
+				if (serverProfile != null)
+				{
+					bool slotsMigrated = serverProfile.Slots == 0;
+					bool splitModeMigrated = serverProfile.NormalizeLegacyGpuSplitMode();
+					if (slotsMigrated)
+					{
+						serverProfile.Slots = 1;
+					}
+					profiles.Add(serverProfile);
+					if (migrated || slotsMigrated || splitModeMigrated)
+					{
+						string contents = JsonSerializer.Serialize(serverProfile, _jsonOptions);
+						WriteProfileAtomically(path, contents);
+					}
+				}
+			}
+			catch (Exception exception)
+			{
+				_log.Error(exception, "Failed to load profile: " + path, "ProfileManager");
+			}
+		}
+		CleanupDuplicateProfileFiles(files);
+		if (profiles.Count == 0)
+		{
+			profiles = CreateDefaultProfiles();
+			foreach (ServerProfile profile in profiles)
+			{
+				await ((IProfileManager)this).SaveProfileAsync(profile);
+			}
+			_log.Information("Созданы профили по умолчанию", "ProfileManager");
+		}
+		profiles.Sort((ServerProfile a, ServerProfile b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+		return profiles;
+	}
+
+	private List<ServerProfile> CreateDefaultProfiles()
+	{
+		return new List<ServerProfile>
+		{
+			new ServerProfile
+			{
+				Id = Guid.NewGuid().ToString("N").Substring(0, 8),
+				Name = "Default",
+				Description = "Default server profile",
+				GpuLayers = "all",
+				ContextSize = 0,
+				BatchSize = 2048,
+				UbatchSize = 512,
+				Threads = -1,
+				ThreadsBatch = -1,
+				MainGpu = 0,
+				FlashAttention = true,
+				Mmap = true,
+				Mlock = false,
+				KvOffloadEnabled = true,
+				Temperature = 0.8f,
+				TopK = 40,
+				TopP = 0.95f,
+				MinP = 0.05f,
+				TypicalP = 1f,
+				RepeatPenalty = 1f,
+				RepeatLastN = -1,
+				PresencePenalty = 0f,
+				FrequencyPenalty = 0f,
+				Seed = -1,
+				Mirostat = MirostatMode.Disabled,
+				MirostatTau = 5f,
+				MirostatEta = 0.1f,
+				DryMultiplier = 0f,
+				DryBase = 1.75f,
+				DynatempStddev = 0f,
+				XtcProbability = 0f,
+				XtcThreshold = 0.1f,
+				Host = "127.0.0.1",
+				Port = 8080,
+				Timeout = 3600,
+				Slots = -1,
+				MaxTokens = -1,
+				PredictCount = -1,
+				CachePrompt = true,
+				ContBatching = true,
+				EnableWebUI = true,
+				EnableSlots = true,
+				EnableMetrics = false,
+				VerboseLogging = false,
+				Reasoning = false,
+				ReasoningBudget = 0,
+				EmbeddingMode = false,
+				SpeculativeDecoding = false,
+				SpecDraftGpuLayers = "",
+				SpecDraftNMax = 3,
+				SpecDraftNMin = 0,
+				SpecDraftPSplit = 0.1f,
+				SpecDraftPMin = 0f,
+				ProcessPriority = "Normal",
+				Numa = false,
+				CreatedAt = DateTime.Now,
+				UpdatedAt = DateTime.Now,
+				IsDefault = true,
+				Color = "#3B82F6"
+			}
+		};
+	}
+
+	async Task<ServerProfile?> IProfileManager.GetProfileAsync(string id)
+	{
+		string profilePath = GetProfilePath(id);
+		if (!File.Exists(profilePath))
+		{
+			return null;
+		}
+		bool migrated;
+		ServerProfile? profile = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(profilePath, out migrated), _jsonOptions);
+		if (profile?.NormalizeLegacyGpuSplitMode() == true)
+		{
+			WriteProfileAtomically(profilePath, JsonSerializer.Serialize(profile, _jsonOptions));
+		}
+		return profile;
+	}
+
+	ServerProfile IProfileManager.CreateProfile(string name)
+	{
+		ServerProfile serverProfile = new ServerProfile
+		{
+			Id = Guid.NewGuid().ToString("N").Substring(0, 8),
+			Name = name,
+			CreatedAt = DateTime.Now,
+			UpdatedAt = DateTime.Now
+		};
+		this.ProfileChanged?.Invoke(serverProfile.Id);
+		return serverProfile;
+	}
+
+	async Task<string> IProfileManager.SaveProfileAsync(ServerProfile profile)
+	{
+		await _profileWriteGate.WaitAsync();
+		try
+		{
+		profile.NormalizeLegacyGpuSplitMode();
+		if (string.IsNullOrEmpty(profile.Id))
+		{
+			profile.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+		}
+		profile.UpdatedAt = DateTime.Now;
+		if (!profile.IsDefault)
+		{
+			string profilesDirectory = GetProfilesDirectory();
+			if (Directory.Exists(profilesDirectory))
+			{
+				bool defaultProfileFound = false;
+				string[] files = Directory.GetFiles(profilesDirectory, "*.json");
+				foreach (string path in files)
+				{
+					try
+					{
+						if (JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out var _), _jsonOptions)?.IsDefault ?? false)
+						{
+							defaultProfileFound = true;
+							break;
+						}
+					}
+					catch
+					{
+					}
+				}
+				if (!defaultProfileFound)
+				{
+					profile.IsDefault = true;
+				}
+			}
+		}
+		string profilePath = GetProfilePath(profile.Id);
+		string contents = JsonSerializer.Serialize(profile, _jsonOptions);
+		WriteProfileAtomically(profilePath, contents);
+		_log.Information($"Saved profile: {profile.Name} ({profile.Id})", "ProfileManager");
+		this.ProfileChanged?.Invoke(profile.Id);
+		return profile.Id;
+		}
+		finally
+		{
+			_profileWriteGate.Release();
+		}
+	}
+
+	void IProfileManager.SaveProfileNow(ServerProfile profile)
+	{
+		SaveProfileSync(profile);
+	}
+
+
+	async Task<bool> IProfileManager.DeleteProfileAsync(string id)
+	{
+		bool deleted = false;
+		string profilesDirectory = GetProfilesDirectory();
+		foreach (string path in Directory.GetFiles(profilesDirectory, "*.json"))
+		{
+			bool matches = string.Equals(Path.GetFileNameWithoutExtension(path), id, StringComparison.OrdinalIgnoreCase);
+			if (!matches)
+			{
+				try
+				{
+					bool migrated;
+					matches = JsonSerializer.Deserialize<ServerProfile>(ReadJsonFile(path, out migrated), _jsonOptions)?.Id == id;
+				}
+				catch
+				{
+				}
+			}
+			if (matches)
+			{
+				File.Delete(path);
+				deleted = true;
+			}
+		}
+		if (!deleted)
+		{
+			return false;
+		}
+		_log.Information("Deleted profile: " + id, "ProfileManager");
+		await Task.CompletedTask;
+		return true;
+	}
+
+	async Task<ServerProfile> IProfileManager.DuplicateProfileAsync(string id)
+	{
+		ServerProfile serverProfile = await ((IProfileManager)this).GetProfileAsync(id);
+		if (serverProfile == null)
+		{
+			throw new ArgumentException("Profile not found: " + id);
+		}
+		ServerProfile copy = new ServerProfile
+		{
+			Name = serverProfile.Name + " (Copy)",
+			Description = serverProfile.Description,
+			ModelPath = serverProfile.ModelPath,
+			MmprojPath = serverProfile.MmprojPath,
+			DraftModelPath = serverProfile.DraftModelPath,
+			LlamaCppVersion = serverProfile.LlamaCppVersion,
+			GpuLayers = serverProfile.GpuLayers,
+			GpuSplitMode = serverProfile.GpuSplitMode,
+			TensorSplit = serverProfile.TensorSplit.ToArray(),
+			MainGpu = serverProfile.MainGpu,
+			FlashAttention = serverProfile.FlashAttention,
+			Mmap = serverProfile.Mmap,
+			Mlock = serverProfile.Mlock,
+			KvOffloadEnabled = serverProfile.KvOffloadEnabled,
+			ContextSize = serverProfile.ContextSize,
+			BatchSize = serverProfile.BatchSize,
+			UbatchSize = serverProfile.UbatchSize,
+			CacheTypeK = serverProfile.CacheTypeK,
+			CacheTypeV = serverProfile.CacheTypeV,
+			Threads = serverProfile.Threads,
+			ThreadsBatch = serverProfile.ThreadsBatch,
+			Temperature = serverProfile.Temperature,
+			TopK = serverProfile.TopK,
+			TopP = serverProfile.TopP,
+			MinP = serverProfile.MinP,
+			TypicalP = serverProfile.TypicalP,
+			RepeatPenalty = serverProfile.RepeatPenalty,
+			RepeatLastN = serverProfile.RepeatLastN,
+			Mirostat = serverProfile.Mirostat,
+			MirostatTau = serverProfile.MirostatTau,
+			MirostatEta = serverProfile.MirostatEta,
+			DryMultiplier = serverProfile.DryMultiplier,
+			DryBase = serverProfile.DryBase,
+			DynatempStddev = serverProfile.DynatempStddev,
+			XtcProbability = serverProfile.XtcProbability,
+			XtcThreshold = serverProfile.XtcThreshold,
+			Host = serverProfile.Host,
+			Port = serverProfile.Port,
+			RpcEnabled = serverProfile.RpcEnabled,
+			RpcEndpoint = serverProfile.RpcEndpoint,
+			Timeout = serverProfile.Timeout,
+			Slots = serverProfile.Slots,
+			PredictCount = serverProfile.PredictCount,
+			SpecType = serverProfile.SpecType,
+			SpecDraftGpuLayers = serverProfile.SpecDraftGpuLayers,
+			SpeculativeDecoding = serverProfile.SpeculativeDecoding,
+			RopeFreqBase = serverProfile.RopeFreqBase,
+			RopeFreqScale = serverProfile.RopeFreqScale,
+			YarnOriginalContext = serverProfile.YarnOriginalContext,
+			YarnExtFactor = serverProfile.YarnExtFactor,
+			YarnAttnFactor = serverProfile.YarnAttnFactor,
+			YarnBetaFast = serverProfile.YarnBetaFast,
+			YarnBetaSlow = serverProfile.YarnBetaSlow,
+			EmbeddingMode = serverProfile.EmbeddingMode,
+			PoolingType = serverProfile.PoolingType,
+			ProcessPriority = serverProfile.ProcessPriority,
+			Numa = serverProfile.Numa,
+			CpuAffinity = serverProfile.CpuAffinity,
+			CustomArguments = new Dictionary<string, string>(),
+			CustomArgumentToggleStates = new Dictionary<string, bool>(),
+			Color = serverProfile.Color,
+			IsDefault = false
+		};
+		copy.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+		copy.CreatedAt = DateTime.Now;
+		await ((IProfileManager)this).SaveProfileAsync(copy);
+		return copy;
+	}
+
+	async Task<ServerProfile> IProfileManager.ImportProfileAsync(string json)
+	{
+		ServerProfile profile = JsonSerializer.Deserialize<ServerProfile>(json, _jsonOptions);
+		if (profile == null)
+		{
+			throw new InvalidDataException("Invalid profile JSON");
+		}
+		profile.Id = Guid.NewGuid().ToString("N").Substring(0, 8);
+		profile.CreatedAt = DateTime.Now;
+		profile.UpdatedAt = DateTime.Now;
+		await ((IProfileManager)this).SaveProfileAsync(profile);
+		return profile;
+	}
+
+	string IProfileManager.ExportProfile(ServerProfile profile)
+	{
+		return JsonSerializer.Serialize(profile, _jsonOptions);
+	}
+
+	async Task IProfileManager.SetDefaultProfileAsync(string id)
+	{
+		List<ServerProfile> source = await ((IProfileManager)this).GetAllProfilesAsync();
+		ServerProfile serverProfile = source.FirstOrDefault((ServerProfile p) => p.Id == id);
+		List<ServerProfile> others = source.Where((ServerProfile p) => p.Id != id).ToList();
+		if (serverProfile != null)
+		{
+			serverProfile.IsDefault = true;
+			await ((IProfileManager)this).SaveProfileAsync(serverProfile);
+		}
+		foreach (ServerProfile profile in others)
+		{
+			profile.IsDefault = false;
+			await ((IProfileManager)this).SaveProfileAsync(profile);
+		}
+		_log.Information("Set default profile: " + id, "ProfileManager");
+	}
+
+	async Task<ServerProfile?> IProfileManager.GetDefaultProfileAsync()
+	{
+		List<ServerProfile> source = await ((IProfileManager)this).GetAllProfilesAsync();
+		ServerProfile serverProfile = source.FirstOrDefault((ServerProfile p) => p.IsDefault);
+		if (serverProfile != null)
+		{
+			return serverProfile;
+		}
+		return source.FirstOrDefault();
+	}
+}

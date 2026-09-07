@@ -1,0 +1,8 @@
+namespace LlamaStudio.Core.Enums;
+
+public enum GpuSplitMode
+{
+	None,
+	Layer,
+	Row
+}

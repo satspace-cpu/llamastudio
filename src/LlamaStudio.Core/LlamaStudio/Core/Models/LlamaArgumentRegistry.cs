@@ -1,0 +1,1754 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+
+namespace LlamaStudio.Core.Models;
+
+public static class LlamaArgumentRegistry
+{
+	public enum Category
+	{
+		Common,
+		Sampling,
+		Speculative,
+		Server
+	}
+
+	public class ArgDefinition
+	{
+		public string PrimaryFlag { get; set; } = string.Empty;
+
+		public string DescriptionEn { get; set; } = string.Empty;
+
+		public string DescriptionRu { get; set; } = string.Empty;
+
+		public string DefaultValue { get; set; } = string.Empty;
+
+		public string[]? AllowedValues { get; set; }
+
+		public bool TakesValue { get; set; }
+
+		public Category Category { get; set; }
+
+		public bool IsInMainUI { get; set; }
+
+		public string GetLocalizedDescription()
+		{
+			if (!CultureInfo.CurrentUICulture.Name.StartsWith("ru"))
+			{
+				return DescriptionEn;
+			}
+			return DescriptionRu;
+		}
+	}
+
+	private static readonly List<ArgDefinition> _all;
+
+	private static readonly Dictionary<string, ArgDefinition> _byFlag;
+
+	public static IEnumerable<ArgDefinition> AllDefinitions => _all;
+
+	public static string GetCategoryDisplayName(Category category)
+	{
+		bool flag = CultureInfo.CurrentUICulture.Name.StartsWith("ru");
+		return category switch
+		{
+			Category.Common => flag ? "Общие параметры" : "Common Parameters", 
+			Category.Sampling => flag ? "Параметры семплирования" : "Sampling Parameters", 
+			Category.Speculative => flag ? "Спекулятивное декодирование" : "Speculative Decoding", 
+			Category.Server => flag ? "Параметры сервера" : "Server Parameters", 
+			_ => string.Empty, 
+		};
+	}
+
+	static LlamaArgumentRegistry()
+	{
+		_all = new List<ArgDefinition>();
+		_byFlag = new Dictionary<string, ArgDefinition>(StringComparer.OrdinalIgnoreCase);
+		ArgDefinition[] array = new ArgDefinition[218]
+		{
+			new ArgDefinition
+			{
+				PrimaryFlag = "-t",
+				DescriptionEn = "Number of CPU threads to use during generation",
+				DescriptionRu = "Количество потоков CPU для генерации",
+				DefaultValue = "-1",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-tb",
+				DescriptionEn = "Number of threads for batch and prompt processing",
+				DescriptionRu = "Количество потоков для обработки пакета и промпта",
+				DefaultValue = "same as --threads",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-c",
+				DescriptionEn = "Prompt context size (0 = from model)",
+				DescriptionRu = "Размер контекста промпта (0 = из модели)",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-n",
+				DescriptionEn = "Tokens to predict (-1 = infinity)",
+				DescriptionRu = "Токенов для предсказания (-1 = бесконечно)",
+				DefaultValue = "-1",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-b",
+				DescriptionEn = "Logical maximum batch size",
+				DescriptionRu = "Логический максимальный размер пакета",
+				DefaultValue = "2048",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ub",
+				DescriptionEn = "Physical maximum batch size",
+				DescriptionRu = "Физический максимальный размер пакета",
+				DefaultValue = "512",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-fa",
+				DescriptionEn = "Flash Attention ('on', 'off', 'auto')",
+				DescriptionRu = "Flash Attention ('on', 'off' или 'auto')",
+				DefaultValue = "auto",
+				AllowedValues = new string[3] { "on", "off", "auto" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--rope-scaling",
+				DescriptionEn = "RoPE frequency scaling method",
+				DescriptionRu = "Метод масштабирования частоты RoPE",
+				AllowedValues = new string[3] { "none", "linear", "yarn" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--rope-freq-base",
+				DescriptionEn = "RoPE base frequency (NTK-aware scaling)",
+				DescriptionRu = "Базовая частота RoPE (NTK-масштабирование)",
+				DefaultValue = "from model",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--rope-freq-scale",
+				DescriptionEn = "RoPE frequency scaling factor",
+				DescriptionRu = "Коэффициент масштабирования частоты RoPE",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--yarn-orig-ctx",
+				DescriptionEn = "YaRN: original context size (0 = model training context)",
+				DescriptionRu = "YaRN: исходный размер контекста (0 = контекст обучения)",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--yarn-ext-factor",
+				DescriptionEn = "YaRN: extrapolation mix factor (0.0 = full interpolation)",
+				DescriptionRu = "YaRN: коэффициент смешивания экстраполяции (0.0 = полная интерполяция)",
+				DefaultValue = "-1.00",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--yarn-attn-factor",
+				DescriptionEn = "YaRN: attention magnitude scale sqrt(t)",
+				DescriptionRu = "YaRN: масштаб величины внимания sqrt(t)",
+				DefaultValue = "-1.00",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--yarn-beta-fast",
+				DescriptionEn = "YaRN: low correction dim or beta",
+				DescriptionRu = "YaRN: размерность нижней коррекции или beta",
+				DefaultValue = "-1.00",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--yarn-beta-slow",
+				DescriptionEn = "YaRN: high correction dim or alpha",
+				DescriptionRu = "YaRN: размерность верхней коррекции или alpha",
+				DefaultValue = "-1.00",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ctk",
+				DescriptionEn = "KV cache type for K",
+				DescriptionRu = "Тип кэша KV для K",
+				DefaultValue = "f16",
+				AllowedValues = new string[9] { "f32", "f16", "bf16", "q8_0", "q4_0", "q4_1", "iq4_nl", "q5_0", "q5_1" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ctv",
+				DescriptionEn = "KV cache type for V",
+				DescriptionRu = "Тип кэша KV для V",
+				DefaultValue = "f16",
+				AllowedValues = new string[9] { "f32", "f16", "bf16", "q8_0", "q4_0", "q4_1", "iq4_nl", "q5_0", "q5_1" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mlock",
+				DescriptionEn = "Keep model in RAM (no swap/compress)",
+				DescriptionRu = "Удерживать модель в ОЗУ (без свопинга)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mmap",
+				DescriptionEn = "Memory-map model (disable = slower load, fewer pageouts)",
+				DescriptionRu = "mmap модели (выкл = медленная загрузка, меньше pageouts)",
+				DefaultValue = "enabled",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--numa",
+				DescriptionEn = "NUMA optimizations (distribute, isolate, numactl)",
+				DescriptionRu = "NUMA-оптимизации (distribute, isolate, numactl)",
+				AllowedValues = new string[3] { "distribute", "isolate", "numactl" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ngl",
+				DescriptionEn = "Layers to store in VRAM ('auto', 'all', or number)",
+				DescriptionRu = "Слои в VRAM ('auto', 'all' или число)",
+				DefaultValue = "auto",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-sm",
+				DescriptionEn = "Split model across GPUs",
+				DescriptionRu = "Разделение модели между GPU",
+				DefaultValue = "layer",
+				AllowedValues = new string[3] { "none", "layer", "tensor" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ts",
+				DescriptionEn = "Model offload fraction per GPU, comma-separated",
+				DescriptionRu = "Доля модели на каждый GPU, через запятую",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-mg",
+				DescriptionEn = "Main GPU for model and intermediate results",
+				DescriptionRu = "Основной GPU для модели и результатов",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ot",
+				DescriptionEn = "Override tensor buffer type (pattern=buffer_type,...)",
+				DescriptionRu = "Переопределение типа буфера тензоров (шаблон=тип_буфера,...)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cache-ram",
+				DescriptionEn = "Max KV cache size in MiB (-1 = unlimited, 0 = off)",
+				DescriptionRu = "Макс. размер кэша KV в МиБ (-1 = без ограничений, 0 = выкл)",
+				DefaultValue = "8192",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cache-reuse",
+				DescriptionEn = "Min block size for cache reuse via KV shifting",
+				DescriptionRu = "Мин. размер блока для повторного использования кэша через KV shifting",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--check-tensors",
+				DescriptionEn = "Check model tensor data for invalid values",
+				DescriptionRu = "Проверить данные тензоров модели на некорректные значения",
+				DefaultValue = "false",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--override-kv",
+				DescriptionEn = "Override model metadata (KEY=TYPE:VALUE,...)",
+				DescriptionRu = "Переопределение метаданных модели (KEY=TYPE:VALUE,...)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--op-offload",
+				DescriptionEn = "Offload host tensor operations to device",
+				DescriptionRu = "Офлоад тензорных операций хоста на устройство",
+				DefaultValue = "true",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--lora",
+				DescriptionEn = "LoRA adapter path (comma-separated for multiple)",
+				DescriptionRu = "Путь к адаптеру LoRA (через запятую для нескольких)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--lora-scaled",
+				DescriptionEn = "LoRA adapter with scaling (FNAME:SCALE,...)",
+				DescriptionRu = "Адаптер LoRA с масштабированием (FNAME:SCALE,...)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--control-vector",
+				DescriptionEn = "Control vector path (comma-separated for multiple)",
+				DescriptionRu = "Путь к вектору управления (через запятую)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--control-vector-layer-range",
+				DescriptionEn = "Layer range for control vector(s)",
+				DescriptionRu = "Диапазон слоёв для вектора(ов) управления",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--offline",
+				DescriptionEn = "Offline mode: use cache, no network",
+				DescriptionRu = "Автономный режим: кэш, без сети",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-disable",
+				DescriptionEn = "Disable logging",
+				DescriptionRu = "Отключить логирование",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-file",
+				DescriptionEn = "Log to file",
+				DescriptionRu = "Записывать лог в файл",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-colors",
+				DescriptionEn = "Colored logging ('on', 'off', 'auto')",
+				DescriptionRu = "Цветной лог ('on', 'off' или 'auto')",
+				DefaultValue = "auto",
+				AllowedValues = new string[3] { "on", "off", "auto" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-v",
+				DescriptionEn = "Verbose logging (log all messages)",
+				DescriptionRu = "Подробное логирование (все сообщения)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-lv",
+				DescriptionEn = "Verbosity threshold (0=generic, 1=error, 2=warning, 3=info, 4=trace, 5=debug)",
+				DescriptionRu = "Порог детализации (0=общий, 1=ошибка, 2=предупр., 3=инфо, 4=trace, 5=debug)",
+				DefaultValue = "3",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-prefix",
+				DescriptionEn = "Enable prefix in log messages",
+				DescriptionRu = "Префикс в сообщениях лога",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-timestamps",
+				DescriptionEn = "Enable timestamps in log messages",
+				DescriptionRu = "Метки времени в сообщениях лога",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-cmoe",
+				DescriptionEn = "Keep all MoE weights in CPU",
+				DescriptionRu = "Хранить все веса MoE в CPU",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-ncmoe",
+				DescriptionEn = "Keep MoE weights of first N layers in CPU",
+				DescriptionRu = "Хранить веса MoE первых N слоёв в CPU",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-fit",
+				DescriptionEn = "Adjust unset args to fit device memory",
+				DescriptionRu = "Корректировать аргументы для помещения в память",
+				DefaultValue = "on",
+				AllowedValues = new string[2] { "on", "off" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-fitt",
+				DescriptionEn = "Target margin per device for --fit, MiB comma-separated",
+				DescriptionRu = "Запас памяти на устройство для --fit, МиБ через запятую",
+				DefaultValue = "1024",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fit-target",
+				DescriptionEn = "Target margin per device for --fit, MiB comma-separated",
+				DescriptionRu = "Запас памяти на устройство для --fit, МиБ через запятую",
+				DefaultValue = "1024",
+				TakesValue = true,
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-fitc",
+				DescriptionEn = "Minimum ctx size for --fit option",
+				DescriptionRu = "Мин. размер контекста для --fit",
+				DefaultValue = "4096",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--repack",
+				DescriptionEn = "Enable weight repacking",
+				DescriptionRu = "Перепаковка весов",
+				DefaultValue = "enabled",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-dio",
+				DescriptionEn = "Use DirectIO if available",
+				DescriptionRu = "DirectIO, если доступно",
+				DefaultValue = "disabled",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-dev",
+				DescriptionEn = "Comma-separated devices for offloading (none = don't offload)",
+				DescriptionRu = "Устройства для офлоада через запятую (none = не офлоадить)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--list-devices",
+				DescriptionEn = "Print available devices and exit",
+				DescriptionRu = "Список доступных устройств и выход",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--rpc",
+				DescriptionEn = "RPC servers list (host:port, comma-separated)",
+				DescriptionRu = "Список RPC-серверов (host:port, через запятую)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--perf",
+				DescriptionEn = "Enable internal libllama performance timings",
+				DescriptionRu = "Внутренние замеры производительности libllama",
+				DefaultValue = "false",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-e",
+				DescriptionEn = "Process escape sequences (\\n, \\r, \\t, etc.)",
+				DescriptionRu = "Обработка escape-последовательностей (\\n, \\r, \\t и т.д.)",
+				DefaultValue = "true",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--keep",
+				DescriptionEn = "Tokens to keep from initial prompt (0, -1 = all)",
+				DescriptionRu = "Токенов для сохранения из начального промпта (0, -1 = все)",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--swa-full",
+				DescriptionEn = "Use full-size SWA cache",
+				DescriptionRu = "Кэш SWA полного размера",
+				DefaultValue = "false",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--no-host",
+				DescriptionEn = "Bypass host buffer for extra buffers",
+				DescriptionRu = "Обойти host-буфер для дополнительных буферов",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--prio",
+				DescriptionEn = "Process/thread priority: low(-1), normal(0), medium(1), high(2), realtime(3)",
+				DescriptionRu = "Приоритет процесса/потока: low(-1), normal(0), medium(1), high(2), realtime(3)",
+				DefaultValue = "0",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--poll",
+				DescriptionEn = "Polling level to wait for work (0 = no polling)",
+				DescriptionRu = "Уровень опроса для ожидания работы (0 = без опроса)",
+				DefaultValue = "50",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-C",
+				DescriptionEn = "CPU affinity mask (hex)",
+				DescriptionRu = "Маска привязки CPU (hex)",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-Cr",
+				DescriptionEn = "CPU range for affinity",
+				DescriptionRu = "Диапазон CPU для привязки",
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cpu-strict",
+				DescriptionEn = "Strict CPU placement",
+				DescriptionRu = "Строгое размещение CPU",
+				DefaultValue = "0",
+				AllowedValues = new string[2] { "0", "1" },
+				Category = Category.Common
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--samplers",
+				DescriptionEn = "Samplers for generation in order, separated by ';'",
+				DescriptionRu = "Сэмплеры для генерации по порядку, разделённые ';'",
+				DefaultValue = "penalties;dry;top_n_sigma;top_k;typ_p;top_p;min_p;xtc;temperature",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-s",
+				DescriptionEn = "RNG seed (-1 = random)",
+				DescriptionRu = "Начальное значение ГПСЧ (-1 = случайное)",
+				DefaultValue = "-1",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--sampler-seq",
+				DescriptionEn = "Simplified sampler sequence",
+				DescriptionRu = "Упрощённая последовательность сэмплеров",
+				DefaultValue = "edskypmxt",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--ignore-eos",
+				DescriptionEn = "Ignore end-of-stream token and continue generating",
+				DescriptionRu = "Игнорировать токен конца потока и продолжить генерацию",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--temp",
+				DescriptionEn = "Temperature",
+				DescriptionRu = "Температура",
+				DefaultValue = "0.80",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--top-k",
+				DescriptionEn = "Top-k sampling (0 = disabled)",
+				DescriptionRu = "Сэмплирование top-k (0 = отключено)",
+				DefaultValue = "40",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--top-p",
+				DescriptionEn = "Top-p sampling (1.0 = disabled)",
+				DescriptionRu = "Сэмплирование top-p (1.0 = отключено)",
+				DefaultValue = "0.95",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--min-p",
+				DescriptionEn = "Min-p sampling (0.0 = disabled)",
+				DescriptionRu = "Сэмплирование min-p (0.0 = отключено)",
+				DefaultValue = "0.05",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--top-nsigma",
+				DescriptionEn = "Top-n-sigma sampling (-1.0 = disabled)",
+				DescriptionRu = "Сэмплирование top-n-sigma (-1.0 = отключено)",
+				DefaultValue = "-1.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--xtc-probability",
+				DescriptionEn = "XTC probability (0.0 = disabled)",
+				DescriptionRu = "Вероятность XTC (0.0 = отключено)",
+				DefaultValue = "0.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--xtc-threshold",
+				DescriptionEn = "XTC threshold (1.0 = disabled)",
+				DescriptionRu = "Порог XTC (1.0 = отключено)",
+				DefaultValue = "0.10",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--typical",
+				DescriptionEn = "Locally typical sampling, parameter p (1.0 = disabled)",
+				DescriptionRu = "Локально типичное сэмплирование, параметр p (1.0 = отключено)",
+				DefaultValue = "1.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--repeat-last-n",
+				DescriptionEn = "Last n tokens for penalize (0 = disabled, -1 = ctx_size)",
+				DescriptionRu = "Последние n токенов для штрафования (0 = выкл, -1 = ctx_size)",
+				DefaultValue = "64",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--repeat-penalty",
+				DescriptionEn = "Penalize repeat token sequence (1.0 = disabled)",
+				DescriptionRu = "Штраф за повторение последовательности (1.0 = отключено)",
+				DefaultValue = "1.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--presence-penalty",
+				DescriptionEn = "Presence penalty (0.0 = disabled)",
+				DescriptionRu = "Штраф за присутствие (0.0 = отключено)",
+				DefaultValue = "0.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--frequency-penalty",
+				DescriptionEn = "Frequency penalty (0.0 = disabled)",
+				DescriptionRu = "Штраф за частоту (0.0 = отключено)",
+				DefaultValue = "0.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dry-multiplier",
+				DescriptionEn = "DRY sampling multiplier (0.0 = disabled)",
+				DescriptionRu = "Множитель DRY-сэмплирования (0.0 = отключено)",
+				DefaultValue = "0.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dry-base",
+				DescriptionEn = "DRY sampling base value",
+				DescriptionRu = "Базовое значение DRY-сэмплирования",
+				DefaultValue = "1.75",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dry-allowed-length",
+				DescriptionEn = "Allowed length for DRY sampling",
+				DescriptionRu = "Допустимая длина для DRY-сэмплирования",
+				DefaultValue = "2",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dry-penalty-last-n",
+				DescriptionEn = "DRY penalty for last n tokens (0 = off, -1 = context size)",
+				DescriptionRu = "DRY-штраф за последние n токенов (0 = выкл, -1 = размер контекста)",
+				DefaultValue = "-1",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dry-sequence-breaker",
+				DescriptionEn = "Sequence breaker for DRY sampling",
+				DescriptionRu = "Разделитель последовательностей для DRY-сэмплирования",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--adaptive-target",
+				DescriptionEn = "Adaptive-p: select tokens near this probability (negative = disabled)",
+				DescriptionRu = "Adaptive-p: выбор токенов около этой вероятности (отриц. = отключено)",
+				DefaultValue = "-1.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--adaptive-decay",
+				DescriptionEn = "Adaptive-p: decay rate for target adaptation (0.0 to 0.99)",
+				DescriptionRu = "Adaptive-p: скорость затухания адаптации цели (0.0-0.99)",
+				DefaultValue = "0.90",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dynatemp-range",
+				DescriptionEn = "Dynamic temperature range (0.0 = disabled)",
+				DescriptionRu = "Диапазон динамической температуры (0.0 = отключено)",
+				DefaultValue = "0.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--dynatemp-exp",
+				DescriptionEn = "Dynamic temperature exponent",
+				DescriptionRu = "Показатель динамической температуры",
+				DefaultValue = "1.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mirostat",
+				DescriptionEn = "Mirostat sampling (0=off, 1=Mirostat, 2=Mirostat 2.0)",
+				DescriptionRu = "Сэмплирование Mirostat (0=выкл, 1=Mirostat, 2=Mirostat 2.0)",
+				DefaultValue = "0",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mirostat-lr",
+				DescriptionEn = "Mirostat learning rate, parameter eta",
+				DescriptionRu = "Скорость обучения Mirostat, параметр eta",
+				DefaultValue = "0.10",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mirostat-ent",
+				DescriptionEn = "Mirostat target entropy, parameter tau",
+				DescriptionRu = "Целевая энтропия Mirostat, параметр tau",
+				DefaultValue = "5.00",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-l",
+				DescriptionEn = "Modify token likelihood in completion",
+				DescriptionRu = "Изменить вероятность появления токена",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--grammar",
+				DescriptionEn = "BNF-like grammar to constrain generations",
+				DescriptionRu = "BNF-подобная грамматика для ограничения генерации",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--grammar-file",
+				DescriptionEn = "File to read grammar from",
+				DescriptionRu = "Файл для чтения грамматики",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-j",
+				DescriptionEn = "JSON schema to constrain generations",
+				DescriptionRu = "JSON-схема для ограничения генерации",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-jf",
+				DescriptionEn = "File with JSON schema to constrain generations",
+				DescriptionRu = "Файл с JSON-схемой для ограничения генерации",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-bs",
+				DescriptionEn = "Backend sampling (experimental)",
+				DescriptionRu = "Серверное сэмплирование (экспериментальное)",
+				DefaultValue = "disabled",
+				Category = Category.Sampling
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-hfd",
+				DescriptionEn = "Hugging Face repo for draft model",
+				DescriptionRu = "Репозиторий Hugging Face для черновой модели",
+				DefaultValue = "unused",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-td",
+				DescriptionEn = "Threads for draft model generation",
+				DescriptionRu = "Потоки для генерации черновой модели",
+				DefaultValue = "same as --threads",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-tbd",
+				DescriptionEn = "Threads for draft model batch processing",
+				DescriptionRu = "Потоки для пакетной обработки черновой модели",
+				DefaultValue = "same as --threads-draft",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-Cd",
+				DescriptionEn = "CPU affinity mask for draft model",
+				DescriptionRu = "Маска привязки CPU для черновой модели",
+				DefaultValue = "same as --cpu-mask",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-Crd",
+				DescriptionEn = "CPU range for draft model affinity",
+				DescriptionRu = "Диапазон CPU для привязки черновой модели",
+				DefaultValue = "same as --cpu-range",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-cpu-strict",
+				DescriptionEn = "Strict CPU placement for draft model",
+				DescriptionRu = "Строгое размещение CPU для черновой модели",
+				DefaultValue = "same as --cpu-strict",
+				AllowedValues = new string[2] { "0", "1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-prio",
+				DescriptionEn = "Process/thread priority for draft model",
+				DescriptionRu = "Приоритет процесса/потока для черновой модели",
+				DefaultValue = "0",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-poll",
+				DescriptionEn = "Polling for draft model work",
+				DescriptionRu = "Опрос для работы черновой модели",
+				DefaultValue = "same as --poll",
+				AllowedValues = new string[2] { "0", "1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-cb",
+				DescriptionEn = "CPU affinity mask for draft batch processing",
+				DescriptionRu = "Маска привязки CPU для пакетной обработки черновика",
+				DefaultValue = "same as --cpu-mask-batch",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-Crb",
+				DescriptionEn = "CPU ranges for draft batch affinity",
+				DescriptionRu = "Диапазоны CPU для привязки пакета черновика",
+				DefaultValue = "same as --cpu-range-batch",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-cpu-strict-batch",
+				DescriptionEn = "Strict CPU placement for draft batch",
+				DescriptionRu = "Строгое размещение CPU для пакета черновика",
+				DefaultValue = "same as --cpu-strict-batch",
+				AllowedValues = new string[2] { "0", "1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-prio-batch",
+				DescriptionEn = "Process/thread priority for draft batch",
+				DescriptionRu = "Приоритет процесса/потока для пакета черновика",
+				DefaultValue = "0",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-poll-batch",
+				DescriptionEn = "Polling for draft batch work",
+				DescriptionRu = "Опрос для работы пакета черновика",
+				DefaultValue = "same as --poll-batch",
+				AllowedValues = new string[2] { "0", "1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-backend",
+				DescriptionEn = "Offload draft sampling to backend (experimental)",
+				DescriptionRu = "Офлоад сэмплирования черновика на бэкенд (экспериментальное)",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-cpu-mask",
+				DescriptionEn = "CPU affinity mask for draft model",
+				DescriptionRu = "Маска привязки CPU для черновой модели",
+				DefaultValue = "same as --cpu-mask",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-n-max",
+				DescriptionEn = "Max number of draft tokens",
+				DescriptionRu = "Макс. количество токенов черновика",
+				DefaultValue = "16",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-n-min",
+				DescriptionEn = "Min number of draft tokens",
+				DescriptionRu = "Мин. количество токенов черновика",
+				DefaultValue = "1",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-p-split",
+				DescriptionEn = "Draft model split point",
+				DescriptionRu = "Точка разделения черновой модели",
+				DefaultValue = "0.50",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-p-min",
+				DescriptionEn = "Draft model min probability",
+				DescriptionRu = "Мин. вероятность черновой модели",
+				DefaultValue = "0.00",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-type-k",
+				DescriptionEn = "KV cache type K for draft model",
+				DescriptionRu = "Тип кэша KV для K черновой модели",
+				DefaultValue = "f16",
+				AllowedValues = new string[9] { "f32", "f16", "bf16", "q8_0", "q4_0", "q4_1", "iq4_nl", "q5_0", "q5_1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-type-v",
+				DescriptionEn = "KV cache type V for draft model",
+				DescriptionRu = "Тип кэша KV для V черновой модели",
+				DefaultValue = "f16",
+				AllowedValues = new string[9] { "f32", "f16", "bf16", "q8_0", "q4_0", "q4_1", "iq4_nl", "q5_0", "q5_1" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-threads",
+				DescriptionEn = "Threads for draft model",
+				DescriptionRu = "Потоки для черновой модели",
+				DefaultValue = "same as --threads",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-threads-batch",
+				DescriptionEn = "Threads for draft model batch",
+				DescriptionRu = "Потоки для пакета черновой модели",
+				DefaultValue = "same as --threads-draft",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-ngl",
+				DescriptionEn = "GPU layers for draft model",
+				DescriptionRu = "Слои GPU для черновой модели",
+				DefaultValue = "same as --gpu-layers",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-main-gpu",
+				DescriptionEn = "Main GPU for draft model",
+				DescriptionRu = "Основной GPU для черновой модели",
+				DefaultValue = "same as --main-gpu",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-sm",
+				DescriptionEn = "Split mode for draft model",
+				DescriptionRu = "Режим разделения для черновой модели",
+				DefaultValue = "same as --split-mode",
+				AllowedValues = new string[3] { "none", "layer", "tensor" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-ts",
+				DescriptionEn = "Tensor split for draft model",
+				DescriptionRu = "Разделение тензоров для черновой модели",
+				DefaultValue = "same as --tensor-split",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-fa",
+				DescriptionEn = "Flash Attention for draft model",
+				DescriptionRu = "Flash Attention для черновой модели",
+				DefaultValue = "same as --flash-attn",
+				AllowedValues = new string[3] { "on", "off", "auto" },
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-mmap",
+				DescriptionEn = "mmap for draft model",
+				DescriptionRu = "mmap для черновой модели",
+				DefaultValue = "same as --mmap",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-mlock",
+				DescriptionEn = "mlock for draft model",
+				DescriptionRu = "mlock для черновой модели",
+				DefaultValue = "same as --mlock",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-cache-ram",
+				DescriptionEn = "Cache RAM for draft model",
+				DescriptionRu = "Кэш RAM для черновой модели",
+				DefaultValue = "same as --cache-ram",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-ctx-size",
+				DescriptionEn = "Context size for draft model",
+				DescriptionRu = "Размер контекста для черновой модели",
+				DefaultValue = "same as --ctx-size",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-batch-size",
+				DescriptionEn = "Batch size for draft model",
+				DescriptionRu = "Размер пакета для черновой модели",
+				DefaultValue = "same as --batch-size",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-draft-ubatch-size",
+				DescriptionEn = "Ubatch size for draft model",
+				DescriptionRu = "Ubatch размер для черновой модели",
+				DefaultValue = "same as --ubatch-size",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-type",
+				DescriptionEn = "Speculative decoding type",
+				DescriptionRu = "Тип спекулятивного декодирования",
+				DefaultValue = "0",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-k",
+				DescriptionEn = "Speculative decoding K parameter",
+				DescriptionRu = "Параметр K спекулятивного декодирования",
+				DefaultValue = "1",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-p",
+				DescriptionEn = "Speculative decoding probability threshold",
+				DescriptionRu = "Порог вероятности спекулятивного декодирования",
+				DefaultValue = "0.10",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-ngram-max",
+				DescriptionEn = "Max n-gram size for speculative decoding",
+				DescriptionRu = "Макс. размер n-gram для спекулятивного декодирования",
+				DefaultValue = "16",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-ngram-min",
+				DescriptionEn = "Min n-gram size for speculative decoding",
+				DescriptionRu = "Мин. размер n-gram для спекулятивного декодирования",
+				DefaultValue = "1",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-light",
+				DescriptionEn = "Light speculative decoding mode",
+				DescriptionRu = "Лёгкий режим спекулятивного декодирования",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-light-max",
+				DescriptionEn = "Max tokens for light speculative decoding",
+				DescriptionRu = "Макс. токенов для лёгкого спекулятивного декодирования",
+				DefaultValue = "16",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-light-min",
+				DescriptionEn = "Min tokens for light speculative decoding",
+				DescriptionRu = "Мин. токенов для лёгкого спекулятивного декодирования",
+				DefaultValue = "1",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-light-p-split",
+				DescriptionEn = "Split point for light speculative decoding",
+				DescriptionRu = "Точка разделения для лёгкого спекулятивного декодирования",
+				DefaultValue = "0.50",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-light-p-min",
+				DescriptionEn = "Min probability for light speculative decoding",
+				DescriptionRu = "Мин. вероятность для лёгкого спекулятивного декодирования",
+				DefaultValue = "0.00",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-parallel",
+				DescriptionEn = "Parallel speculative decoding",
+				DescriptionRu = "Параллельное спекулятивное декодирование",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-parallel-max",
+				DescriptionEn = "Max parallel speculative tokens",
+				DescriptionRu = "Макс. параллельных токенов черновика",
+				DefaultValue = "16",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-parallel-min",
+				DescriptionEn = "Min parallel speculative tokens",
+				DescriptionRu = "Мин. параллельных токенов черновика",
+				DefaultValue = "1",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-parallel-p-split",
+				DescriptionEn = "Split point for parallel speculative decoding",
+				DescriptionRu = "Точка разделения для параллельного декодирования",
+				DefaultValue = "0.50",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-parallel-p-min",
+				DescriptionEn = "Min probability for parallel speculative decoding",
+				DescriptionRu = "Мин. вероятность для параллельного декодирования",
+				DefaultValue = "0.00",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-model",
+				DescriptionEn = "Speculative decoding model path",
+				DescriptionRu = "Путь к модели для спекулятивного декодирования",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-model-url",
+				DescriptionEn = "Speculative decoding model URL",
+				DescriptionRu = "URL модели для спекулятивного декодирования",
+				DefaultValue = "unused",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-model-hf",
+				DescriptionEn = "Hugging Face repo for speculative model",
+				DescriptionRu = "Репозиторий Hugging Face для спекулятивной модели",
+				DefaultValue = "unused",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-model-hf-file",
+				DescriptionEn = "Hugging Face file for speculative model",
+				DescriptionRu = "Файл Hugging Face для спекулятивной модели",
+				DefaultValue = "unused",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--spec-model-docker",
+				DescriptionEn = "Docker repo for speculative model",
+				DescriptionRu = "Docker-репозиторий для спекулятивной модели",
+				DefaultValue = "unused",
+				Category = Category.Speculative
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--api-key-file",
+				DescriptionEn = "Path to API keys file",
+				DescriptionRu = "Путь к файлу с API-ключами",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--api-prefix",
+				DescriptionEn = "Server path prefix without trailing slash",
+				DescriptionRu = "Префикс пути сервера без завершающего слеша",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cache-idle-slots",
+				DescriptionEn = "Save and clear idle slots on new task",
+				DescriptionRu = "Сохранять и очищать незанятые слоты при новой задаче",
+				DefaultValue = "enabled, required",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--chat-template",
+				DescriptionEn = "Custom jinja chat template (default from model metadata)",
+				DescriptionRu = "Пользовательский jinja-шаблон чата (по умолчанию из метаданных модели)",
+				DefaultValue = "from model",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--chat-template-file",
+				DescriptionEn = "Set custom chat template file",
+				DescriptionRu = "Файл пользовательского шаблона чата",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--chat-template-kwargs",
+				DescriptionEn = "Additional chat template parser params (JSON string)",
+				DescriptionRu = "Доп. параметры парсера шаблона чата (строка JSON)",
+				DefaultValue = "from model",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--ctx-checkpoints",
+				DescriptionEn = "Max context checkpoints per slot",
+				DescriptionRu = "Макс. контрольных точек контекста на слот",
+				DefaultValue = "32",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--embedding-gemma-default",
+				DescriptionEn = "Use EmbeddingGemma model by default (may download weights)",
+				DescriptionRu = "Использовать модель EmbeddingGemma по умолчанию (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--embedding-normalize",
+				DescriptionEn = "Embedding normalization (-1=no, 0=max abs int16, 1=taxicab, 2=euclidean, >2=p-norm)",
+				DescriptionRu = "Нормализация эмбеддингов (-1=нет, 0=max abs int16, 1=taxicab, 2=евклидова, >2=p-норма)",
+				DefaultValue = "2",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-1-default",
+				DescriptionEn = "Use default Qwen 2.5 Coder 1.5B (may download from internet)",
+				DescriptionRu = "Использовать Qwen 2.5 Coder 1.5B по умолчанию (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-14b-default",
+				DescriptionEn = "Use Qwen 2.5 Coder 14B by default",
+				DescriptionRu = "Использовать Qwen 2.5 Coder 14B по умолчанию",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-14b-spec",
+				DescriptionEn = "Use Qwen 2.5 Coder 14B + 0.5B draft for speculative decoding",
+				DescriptionRu = "Qwen 2.5 Coder 14B + 0.5B черновик для спекулятивного декодирования",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-30b-default",
+				DescriptionEn = "Use Qwen 3 Coder 30B A3B Instruct by default (may download)",
+				DescriptionRu = "Qwen 3 Coder 30B A3B Instruct по умолчанию (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-3b-default",
+				DescriptionEn = "Use Qwen 2.5 Coder 3B by default (may download)",
+				DescriptionRu = "Qwen 2.5 Coder 3B по умолчанию (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-7b-default",
+				DescriptionEn = "Use Qwen 2.5 Coder 7B by default (may download)",
+				DescriptionRu = "Qwen 2.5 Coder 7B по умолчанию (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--fim-qwen-7b-spec",
+				DescriptionEn = "Use Qwen 2.5 Coder 7B + 0.5B draft for speculative decoding",
+				DescriptionRu = "Qwen 2.5 Coder 7B + 0.5B черновик для спекулятивного декодирования",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--gpt-oss-120b-default",
+				DescriptionEn = "Use gpt-oss-120b (may download weights)",
+				DescriptionRu = "Использовать gpt-oss-120b (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--gpt-oss-20b-default",
+				DescriptionEn = "Use gpt-oss-20b (may download weights)",
+				DescriptionRu = "Использовать gpt-oss-20b (может скачать веса)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--image-max-tokens",
+				DescriptionEn = "Max tokens per image (vision models with dynamic resolution)",
+				DescriptionRu = "Макс. токенов на изображение (визуальные модели с динамическим разрешением)",
+				DefaultValue = "from model",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--image-min-tokens",
+				DescriptionEn = "Min tokens per image (vision models with dynamic resolution)",
+				DescriptionRu = "Мин. токенов на изображение (визуальные модели с динамическим разрешением)",
+				DefaultValue = "from model",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--jinja",
+				DescriptionEn = "Use jinja chat templater",
+				DescriptionRu = "Использовать шаблонизатор jinja для чата",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-prompts-dir",
+				DescriptionEn = "Log prompts to directory (debug only, default: disabled)",
+				DescriptionRu = "Логировать промпты в директорию (только для отладки, по умолчанию: выкл)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--lora-init-without-apply",
+				DescriptionEn = "Load LoRA adapters without applying (apply later via POST /lora-adapters)",
+				DescriptionRu = "Загрузить адаптеры LoRA без применения (применить позже через POST /lora-adapters)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--media-path",
+				DescriptionEn = "Directory for loading local media files (accessible via file:// URL)",
+				DescriptionRu = "Директория для загрузки локальных медиафайлов (доступ через file:// URL)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mmproj-auto",
+				DescriptionEn = "Use multimodal projector file automatically (if present), useful with -hf",
+				DescriptionRu = "Автоматически использовать файл мультимодального проектора (при наличии), полезно с -hf",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--mmproj-offload",
+				DescriptionEn = "Enable multimodal projector offload to GPU",
+				DescriptionRu = "Включить офлоад мультимодального проектора на GPU",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--models-autoload",
+				DescriptionEn = "Auto-load models for router server",
+				DescriptionRu = "Автоматически загружать модели для сервера-маршрутизатора",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--models-max",
+				DescriptionEn = "Max concurrent loaded models for router (0 = unlimited)",
+				DescriptionRu = "Макс. одновременно загруженных моделей для маршрутизатора (0 = без ограничений)",
+				DefaultValue = "4",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--models-preset",
+				DescriptionEn = "Path to INI file with model presets for router server",
+				DescriptionRu = "Путь к INI-файлу с пресетами моделей для сервера-маршрутизатора",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--path",
+				DescriptionEn = "Static files serving path",
+				DescriptionRu = "Путь для раздачи статических файлов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--pooling",
+				DescriptionEn = "Pooling type for embeddings (default from model)",
+				DescriptionRu = "Тип пулинга для эмбеддингов (по умолчанию из модели)",
+				AllowedValues = new string[5] { "none", "mean", "cls", "last", "rank" },
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--prefill-assistant",
+				DescriptionEn = "Prefill assistant response if last message is from assistant",
+				DescriptionRu = "Выполнять предзаполнение ответа ассистента, если последнее сообщение — от ассистента",
+				DefaultValue = "prefill enabled",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--props",
+				DescriptionEn = "Enable global properties changes via POST /props",
+				DescriptionRu = "Включить изменение глобальных свойств через POST /props",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--reverse-prompt",
+				DescriptionEn = "Stop generation at reverse prompt",
+				DescriptionRu = "Остановить генерацию при обратном промпте",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--in-prefix",
+				DescriptionEn = "Prefix for user messages",
+				DescriptionRu = "Префикс для сообщений пользователя",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--prefix-end",
+				DescriptionEn = "End prefix for user messages",
+				DescriptionRu = "Конечный префикс для сообщений пользователя",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--sampling-file",
+				DescriptionEn = "Sampling parameters file",
+				DescriptionRu = "Файл параметров семплирования",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--verbose-prompt",
+				DescriptionEn = "Log tokens with text for each call",
+				DescriptionRu = "Логировать токены с текстом для каждого вызова",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cont-batching",
+				DescriptionEn = "Enable continuous batching",
+				DescriptionRu = "Включить непрерывное батчинг",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--context-shift",
+				DescriptionEn = "Enable context shifting",
+				DescriptionRu = "Включить сдвиг контекста",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--cache-prompt",
+				DescriptionEn = "Enable prompt caching",
+				DescriptionRu = "Включить кэширование промптов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--embedding",
+				DescriptionEn = "Enable embedding mode",
+				DescriptionRu = "Включить режим эмбеддингов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--ui",
+				DescriptionEn = "Enable web UI",
+				DescriptionRu = "Включить веб-интерфейс",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--metrics",
+				DescriptionEn = "Enable metrics endpoint",
+				DescriptionRu = "Включить endpoint метрик",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--reasoning",
+				DescriptionEn = "Enable reasoning mode",
+				DescriptionRu = "Включить режим рассуждений",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--reasoning-budget",
+				DescriptionEn = "Reasoning token budget",
+				DescriptionRu = "Бюджет токенов для рассуждений",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--alias",
+				DescriptionEn = "Model name aliases, comma-separated (for API)",
+				DescriptionRu = "Псевдонимы имени модели, через запятую (для API)",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--host",
+				DescriptionEn = "Server host address",
+				DescriptionRu = "Адрес хоста сервера",
+				DefaultValue = "127.0.0.1",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--port",
+				DescriptionEn = "Server port",
+				DescriptionRu = "Порт сервера",
+				DefaultValue = "8080",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--timeout",
+				DescriptionEn = "Server timeout in seconds",
+				DescriptionRu = "Таймаут сервера в секундах",
+				DefaultValue = "3600",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--api-key",
+				DescriptionEn = "API key for authentication",
+				DescriptionRu = "API-ключ для аутентификации",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "-np",
+				DescriptionEn = "Number of parallel slots",
+				DescriptionRu = "Количество параллельных слотов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--slots",
+				DescriptionEn = "Enable slots management",
+				DescriptionRu = "Включить управление слотами",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--public",
+				DescriptionEn = "Make server publicly accessible",
+				DescriptionRu = "Сделать сервер общедоступным",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--document",
+				DescriptionEn = "Document server",
+				DescriptionRu = "Документировать сервер",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-log-stream",
+				DescriptionEn = "Enable log streaming",
+				DescriptionRu = "Включить потоковую передачу логов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-stream-port",
+				DescriptionEn = "Log stream server port",
+				DescriptionRu = "Порт сервера потоковой передачи логов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--log-stream-token",
+				DescriptionEn = "Log stream authentication token",
+				DescriptionRu = "Токен аутентификации для потоковой передачи логов",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-auto-update",
+				DescriptionEn = "Enable automatic application updates",
+				DescriptionRu = "Включить автоматические обновления приложения",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-tray",
+				DescriptionEn = "Enable system tray icon",
+				DescriptionRu = "Включить значок в системном трее",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-single-instance",
+				DescriptionEn = "Enforce single instance mode",
+				DescriptionRu = "Принудительный режим одного экземпляра",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-auto-start",
+				DescriptionEn = "Enable auto-start on system boot",
+				DescriptionRu = "Включить автозапуск при загрузке системы",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-toast",
+				DescriptionEn = "Enable toast notifications",
+				DescriptionRu = "Включить всплывающие уведомления",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-docker",
+				DescriptionEn = "Enable Docker integration",
+				DescriptionRu = "Включить интеграцию с Docker",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-scenarios",
+				DescriptionEn = "Enable scenario management",
+				DescriptionRu = "Включить управление сценариями",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-profiles",
+				DescriptionEn = "Enable profile management",
+				DescriptionRu = "Включить управление профилями",
+				Category = Category.Server
+			},
+			new ArgDefinition
+			{
+				PrimaryFlag = "--enable-multi-instance",
+				DescriptionEn = "Enable multi-instance server management",
+				DescriptionRu = "Включить управление несколькими экземплярами сервера",
+				Category = Category.Server
+			}
+		};
+		foreach (ArgDefinition argDefinition in array)
+		{
+			_all.Add(argDefinition);
+			_byFlag[argDefinition.PrimaryFlag] = argDefinition;
+		}
+	}
+
+	public static ArgDefinition? GetDefinition(string flag)
+	{
+		return _byFlag.GetValueOrDefault(flag);
+	}
+}

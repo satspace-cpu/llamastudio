@@ -46,8 +46,4 @@ AGENTS.md
 CONTEXT.md
 TELEGRAM_SETUP.md
 
-# Source code - kept local only
-src/
-
-# Allow screenshots for README
-!screenshots/
+# Screenshots and source are tracked

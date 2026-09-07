@@ -1,0 +1,141 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using LlamaStudio.Core.Interfaces;
+
+namespace LlamaStudio.Infrastructure.Updater;
+
+/// <summary>
+/// Builds an official llama.cpp release on Linux when the release does not
+/// publish a Linux CUDA binary.  The server's Tesla V100 is compute capability
+/// 7.0, so compiling only sm_70 produces a smaller, faster build.
+/// </summary>
+internal static class LinuxCudaLlamaBuilder
+{
+    private const string CudaArchitecture = "70;80";
+
+    public static async Task<string> BuildAsync(
+        string version,
+        string targetDirectory,
+        Action<string> reportStatus,
+        ILogService log,
+        CancellationToken cancellationToken)
+    {
+        if (!OperatingSystem.IsLinux())
+            throw new PlatformNotSupportedException("Local CUDA builds are available only on Linux.");
+        if (!Regex.IsMatch(version, "^(b[0-9]+|master)$", RegexOptions.CultureInvariant))
+            throw new InvalidOperationException("Unsupported llama.cpp version identifier: " + version);
+
+        await RunAsync("nvcc", "--version", reportStatus, log, cancellationToken).ConfigureAwait(false);
+        await RunAsync("git", "--version", reportStatus, log, cancellationToken).ConfigureAwait(false);
+        await RunAsync("cmake", "--version", reportStatus, log, cancellationToken).ConfigureAwait(false);
+        await RunAsync("ninja", "--version", reportStatus, log, cancellationToken).ConfigureAwait(false);
+
+        Directory.CreateDirectory(targetDirectory);
+        string sourceRoot = Path.Combine(targetDirectory, ".llama-studio-source");
+        string sourceDirectory = Path.Combine(sourceRoot, version);
+        string buildDirectory = Path.Combine(sourceDirectory, "build-cuda-rpc-sm70-sm80");
+        string installDirectory = Path.Combine(targetDirectory, version + "-cuda12x");
+        string stagingDirectory = Path.Combine(targetDirectory, ".llama-studio-build-" + Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            if (!Directory.Exists(sourceDirectory))
+            {
+                Directory.CreateDirectory(sourceRoot);
+                reportStatus("Downloading llama.cpp source " + version + "...");
+                await RunAsync("git", $"clone --depth 1 --branch {version} https://github.com/ggml-org/llama.cpp.git {Quote(sourceDirectory)}", reportStatus, log, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                reportStatus("Using cached llama.cpp source " + version + "...");
+            }
+
+            reportStatus("Configuring universal CUDA 12.4 + RPC build (sm_70; sm_80)...");
+            await RunAsync("cmake",
+                $"-S {Quote(sourceDirectory)} -B {Quote(buildDirectory)} -G Ninja " +
+                "-DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_RPC=ON " +
+                "-DCMAKE_CUDA_ARCHITECTURES=70;80 -DGGML_BUILD_TESTS=OFF -DLLAMA_BUILD_SERVER=ON",
+                reportStatus, log, cancellationToken).ConfigureAwait(false);
+
+            reportStatus("Compiling universal llama.cpp CUDA + RPC for V100/CMP 170HX (this can take several minutes)...");
+            await RunAsync("cmake", $"--build {Quote(buildDirectory)} --config Release --parallel", reportStatus, log, cancellationToken).ConfigureAwait(false);
+
+            string binaryDirectory = Path.Combine(buildDirectory, "bin");
+            string serverExecutable = Path.Combine(binaryDirectory, "llama-server");
+            if (!File.Exists(serverExecutable))
+                throw new InvalidOperationException("llama-server was not created by the CUDA build.");
+
+            reportStatus("Installing compiled version...");
+            Directory.CreateDirectory(stagingDirectory);
+            CopyDirectory(binaryDirectory, stagingDirectory);
+            string libraryDirectory = Path.Combine(buildDirectory, "lib");
+            if (Directory.Exists(libraryDirectory))
+                CopyDirectory(libraryDirectory, Path.Combine(stagingDirectory, "lib"));
+
+            string stagedServer = Path.Combine(stagingDirectory, "llama-server");
+            if (!File.Exists(stagedServer))
+                throw new InvalidOperationException("Compiled llama-server is missing from the installation stage.");
+
+            if (Directory.Exists(installDirectory))
+                Directory.Delete(installDirectory, recursive: true);
+            Directory.Move(stagingDirectory, installDirectory);
+            reportStatus("CUDA + RPC build installed: " + version);
+            log.Information($"Built llama.cpp {version} with CUDA sm_{CudaArchitecture} and RPC at {installDirectory}", "Updater");
+            return installDirectory;
+        }
+        finally
+        {
+            if (Directory.Exists(stagingDirectory))
+            {
+                try { Directory.Delete(stagingDirectory, recursive: true); }
+                catch { }
+            }
+        }
+    }
+
+    private static async Task RunAsync(string fileName, string arguments, Action<string> reportStatus, ILogService log, CancellationToken cancellationToken)
+    {
+        var startInfo = new ProcessStartInfo(fileName, arguments)
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        string output = await outputTask.ConfigureAwait(false);
+        string error = await errorTask.ConfigureAwait(false);
+        if (process.ExitCode == 0)
+            return;
+
+        string details = string.Join(Environment.NewLine, (output + Environment.NewLine + error)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .TakeLast(20));
+        log.Error($"{fileName} {arguments} failed: {details}", "Updater");
+        throw new InvalidOperationException($"{fileName} failed with code {process.ExitCode}: {details}");
+    }
+
+    private static string Quote(string value) => "\"" + value.Replace("\"", "\\\"") + "\"";
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (string directory in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
+            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
+        foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string destinationFile = Path.Combine(destination, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+            File.Copy(file, destinationFile, overwrite: true);
+        }
+    }
+}

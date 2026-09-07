@@ -1,0 +1,613 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using LlamaStudio.Core.Models;
+
+namespace LlamaStudio.Services;
+
+public static class HelpParserService
+{
+	private static readonly Regex FlagRegex = new Regex("(-[a-zA-Z][a-zA-Z0-9]*\\b)|(--[\\w][\\w-]*)", RegexOptions.Compiled);
+
+	public static readonly HashSet<string> UiExposedFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+	{
+		"-m", "--model", "-mm", "--mmproj", "-md", "--draft-model", "-ngl", "--gpu-layers", "--n-gpu-layers", "-t",
+		"--threads", "-tb", "--threads-batch", "-c", "--ctx-size", "-b", "--batch-size", "-ub", "--ubatch-size", "-n",
+		"--predict", "--n-predict", "--temp", "--temperature", "--top-k", "--top-p", "--min-p", "--typical", "--typical-p", "--repeat-last-n",
+		"--repeat-penalty", "--presence-penalty", "--frequency-penalty", "-s", "--seed", "--mirostat", "--mirostat-ent", "--mirostat-lr", "-fa", "--flash-attn",
+		"--mmap", "--no-mmap", "--mlock", "-kvo", "--kv-offload", "-nkvo", "--no-kv-offload", "-np", "--parallel", "--host",
+		"--port", "-to", "--timeout", "-cb", "--cont-batching", "-ncb", "--no-cont-batching", "--ui", "--webui", "--metrics",
+		"-rea", "--reasoning", "--reasoning-budget", "--rope-scaling", "--rope-freq-base", "--rope-freq-scale", "--yarn-orig-ctx", "--cache-prompt", "--no-cache-prompt", "-v",
+		"--verbose", "--embedding", "--embeddings",
+		// Exclude options that already have dedicated controls on the Server page.
+		"-dev", "--device", "-ts", "--tensor-split", "-sm", "--split-mode", "-mg", "--main-gpu",
+		"--fit", "--fit-target", "--fit-ctx", "--cache-type-k", "-ctk", "--cache-type-v", "-ctv",
+		"--cache-ram", "--cache-reuse", "--context-shift", "--numa", "-lv", "--log-verbosity",
+		"--priority", "--prio", "--threads-http", "--sse-ping-interval"
+	};
+
+	private static readonly Dictionary<string, string> RuDescriptions = new Dictionary<string, string>
+	{
+		["hf_repo"] = "Репозиторий HuggingFace; quant опционален (по умолчанию Q4_K_M). mmproj скачивается автоматически. Пример: ggml-org/GLM-4.7-Flash-GGUF:Q4_K_M",
+		["hf_file"] = "Файл модели HuggingFace. Если указан, переопределяет quant из --hf-repo",
+		["hf_repo_v"] = "Репозиторий HuggingFace для vocoder-модели (по умолчанию не используется)",
+		["hf_file_v"] = "Файл модели HuggingFace для vocoder-модели (по умолчанию не используется)",
+		["hf_token"] = "Токен доступа к HuggingFace (по умолчанию из переменной HF_TOKEN)",
+		["model_url"] = "URL для загрузки модели (по умолчанию не используется)",
+		["docker_repo"] = "Репозиторий Docker Hub. repo опционален, по умолчанию ai/. quant опционален, по умолчанию :latest",
+		["mmap"] = "Карта памяти модели. Если отключено — медленнее загрузка, но меньше pageouts (по умолчанию включено)",
+		["mlock"] = "Заставить систему держать модель в ОЗУ вместо свопинга или сжатия",
+		["direct_io"] = "Использовать DirectIO если доступно (по умолчанию отключено)",
+		["numa"] = "Оптимизации для NUMA-систем: distribute — равномерно, isolate — только на одном узле, numactl — по карте CPU из numactl",
+		["device"] = "Список устройств через запятую для offloading (none = не использовать). Используйте --list-devices для списка доступных",
+		["list_devices"] = "Вывести список доступных устройств и выйти",
+		["override_tensor"] = "Переопределить тип буфера тензора по шаблону имени",
+		["cpu_moe"] = "Держать все веса Mixture of Experts (MoE) на CPU",
+		["n_cpu_moe"] = "Держать веса MoE первых N слоёв на CPU",
+		["gpu_layers"] = "Макс. число слоёв в VRAM: точное число, 'auto' или 'all' (по умолчанию auto)",
+		["split_mode"] = "Распределение модели между GPU: none — один GPU, layer — распределение по слоям, tensor — параллельное распределение тензоров.",
+		["tensor_split"] = "Доля модели на каждом GPU через запятую, напр. 3,1",
+		["main_gpu"] = "Основная GPU для модели в режиме одного устройства. При tensor-split основная GPU не используется. По умолчанию: 0",
+		["fit"] = "Автоматически подгонять параметры под память устройства ('on' или 'off', по умолчанию 'on')",
+		["fit_target"] = "Целевой запас памяти на устройство для --fit через запятую, одно значение — для всех. По умолчанию: 1024 МиБ",
+		["fit_ctx"] = "Минимальный размер контекста для --fit. По умолчанию: 4096",
+		["check_tensors"] = "Проверять данные тензоров модели на некорректные значения (по умолчанию false)",
+		["override_kv"] = "Переопределить метаданные модели по ключу. Типы: int, float, bool, str. Пример: --override-kv tokenizer.ggml.add_bos_token=bool:false",
+		["op_offload"] = "Offload операций тензоров с хоста на устройство (по умолчанию true)",
+		["lora"] = "Путь к LoRA-адаптеру (запятые для нескольких адаптеров)",
+		["lora_scaled"] = "LoRA-адаптер с пользовательским масштабированием. Формат: FNAME:SCALE,...",
+		["control_vector"] = "Добавить control vector (запятые для нескольких)",
+		["control_vector_scaled"] = "Control vector с пользовательским масштабированием SCALE. Формат: FNAME:SCALE,...",
+		["control_vector_layer_range"] = "Диапазон слоёв для применения control vector(s), начало и конец включительно",
+		["ctx_size"] = "Размер контекста (по умолчанию 0, 0 = загружается из модели)",
+		["predict"] = "Число токенов для предсказания (по умолчанию -1, -1 = бесконечность)",
+		["batch_size"] = "Логический максимальный размер батча (по умолчанию 2048)",
+		["ubatch_size"] = "Физический максимальный размер батча (по умолчанию 512)",
+		["keep"] = "Число токенов для сохранения из начального промпта (по умолчанию 0, -1 = все)",
+		["swa_full"] = "Использовать полный KV-кэш SWA (по умолчанию false)",
+		["flash_attn"] = "Flash Attention ('on', 'off' или 'auto', по умолчанию 'auto')",
+		["perf"] = "Включить внутренние замеры производительности libllama (по умолчанию false)",
+		["escape"] = "Обрабатывать escape-последовательности (\n, \r, \t и т.д.) (по умолчанию true)",
+		["rope_scaling"] = "Метод масштабирования частоты RoPE: none, linear или yarn. По умолчанию linear если не указано в модели",
+		["rope_scale"] = "Коэффициент масштабирования контекста RoPE, расширяет контекст в N раз",
+		["rope_freq_base"] = "Базовая частота Rope для NTK-aware scaling (по умолчанию из модели)",
+		["rope_freq_scale"] = "Масштаб частоты Rope, расширяет контекст в 1/N раз",
+		["yarn_orig_ctx"] = "YaRN: исходный размер контекста модели (0 = из модели)",
+		["yarn_ext_factor"] = "YaRN: коэффициент экстраполяции (-1.00 = по умолчанию, 0.0 = полная интерполяция)",
+		["yarn_attn_factor"] = "YaRN: масштаб внимания sqrt(t) или амплитуда (по умолчанию -1.00)",
+		["yarn_beta_slow"] = "YaRN: высокая коррекция dim / alpha (по умолчанию -1.00)",
+		["yarn_beta_fast"] = "YaRN: низкая коррекция dim / beta (по умолчанию -1.00)",
+		["kv_offload"] = "Offloading KV-кэша на GPU (по умолчанию включено)",
+		["repack"] = "Включить repacking весов (по умолчанию включено)",
+		["no_host"] = "Пропустить хост-буфер, разрешая использование дополнительных буферов",
+		["cache_type_k"] = "Тип данных KV-кэша для K. Допустимые: f32, f16, bf16, q8_0, q4_0 и др. (по умолчанию f16)",
+		["cache_type_v"] = "Тип данных KV-кэша для V. Допустимые: f32, f16, bf16, q8_0, q4_0 и др. (по умолчанию f16)",
+		["defrag_thold"] = "Порог дефрагментации KV-кэша (УСТАРЕВШИЙ)",
+		["threads"] = "Число потоков для генерации",
+		["threads_batch"] = "Число потоков для обработки батча и промпта",
+		["cpu_mask"] = "Маска привязки к CPU: произвольно длинный hex. Дополняет --cpu-range",
+		["cpu_range"] = "Диапазоны CPU для привязки. Дополняет --cpu-mask",
+		["cpu_strict"] = "Строгое размещение потоков на CPU (по умолчанию то же, что и --cpu-strict)",
+		["prio_batch"] = "Приоритет процесса/потока: 0-normal, 1-medium, 2-high, 3-realtime (по умолчанию 0)",
+		["poll_batch"] = "Использовать polling для ожидания работы (по умолчанию то же, что и --poll)",
+		["log_disable"] = "Отключить логирование",
+		["log_file"] = "Запись логов в файл",
+		["log_colors"] = "Цветное логирование ('on', 'off' или 'auto', по умолчанию 'auto')",
+		["verbose"] = "Установить уровень детализации на максимум (логировать все сообщения)",
+		["offline"] = "Офлайн-режим: использовать только кэш, запретить доступ в сеть",
+		["verbosity"] = "Порог детализации логов. 0 — общий вывод, 1 — ошибка, 2 — предупреждение, 3 — инфо (по умолчанию), 4 — trace, 5 — debug",
+		["log_prefix"] = "Префикс в сообщениях лога",
+		["log_timestamps"] = "Временные метки в сообщениях лога",
+		["spec_draft_type_k"] = "Тип данных KV-кэша для K модели черновика (по умолчанию f16)",
+		["spec_draft_type_v"] = "Тип данных KV-кэша для V модели черновика (по умолчанию f16)",
+		["samplers"] = "Сэмплеры для генерации через ';'",
+		["seed"] = "Seed генератора случайных чисел (-1 = случайный)",
+		["sampler_seq"] = "Упрощённая последовательность сэмплеров (по умолчанию edskypmxt)",
+		["ignore_eos"] = "Игнорировать end-of-stream токен и продолжать генерацию",
+		["temp"] = "Температура (по умолчанию 0.80)",
+		["top_k"] = "Top-K сэмплирование (40, 0 = отключено)",
+		["top_p"] = "Top-P сэмплирование (0.95, 1.0 = отключено)",
+		["min_p"] = "Min-P сэмплирование (0.05, 0.0 = отключено)",
+		["top_n_sigma"] = "Top-N-Sigma сэмплирование (-1.0 = отключено)",
+		["xtc_probability"] = "XTC вероятность (0.0 = отключено)",
+		["xtc_threshold"] = "XTC порог (1.0 = отключено)",
+		["typical_p"] = "Locally typical sampling, параметр p (1.0 = отключено)",
+		["repeat_last_n"] = "Последние N токенов для штрафов повторов (64, 0 = откл., -1 = ctx_size)",
+		["repeat_penalty"] = "Штраф за повторные последовательности (1.0 = отключено)",
+		["presence_penalty"] = "Presence penalty (0.0 = отключено)",
+		["frequency_penalty"] = "Frequency penalty (0.0 = отключено)",
+		["dry_multiplier"] = "Множитель DRY сэмплирования (0.0 = отключено)",
+		["dry_base"] = "Базовое значение DRY сэмплирования",
+		["dry_allowed_length"] = "Разрешённая длина для DRY сэмплирования",
+		["dry_penalty_last_n"] = "Штраф DRY за последние N токенов (-1 = размер контекста)",
+		["dry_sequence_breaker"] = "Разделитель последовательности для DRY. Используйте \"none\" чтобы не использовать разделители",
+		["adaptive_target"] = "Adaptive-p: выбор токенов около этой вероятности (0.0–1.0, отрицательное = откл.)",
+		["adaptive_decay"] = "Adaptive-p: скорость затухания адаптации цели. Меньше — быстрее реакция, больше — стабильнее",
+		["dynatemp_range"] = "Диапазон динамической температуры (0.0 = отключено)",
+		["dynatemp_exp"] = "Экспонента динамической температуры",
+		["mirostat"] = "Mirostat сэмплирование: 0 — откл., 1 — Mirostat, 2 — Mirostat 2.0 (игнорирует Top K/Nucleus/Typical)",
+		["mirostat_lr"] = "Скорость обучения Mirostat, параметр eta",
+		["mirostat_ent"] = "Целевая энтропия Mirostat, параметр tau",
+		["logit_bias"] = "Изменение вероятности токена. Пример: --logit-bias 15043+1 — увеличить вероятность ' Hello'",
+		["grammar"] = "Грамматика BNF для ограничения генерации (примеры в папке grammars/)",
+		["grammar_file"] = "Файл с грамматикой",
+		["json_schema"] = "JSON schema для ограничения генерации. Пример: {} — любой JSON объект",
+		["json_schema_file"] = "Файл с JSON schema для ограничения генерации",
+		["backend_sampling"] = "Сэмплирование на бэкенде (экспериментально, по умолчанию отключено)",
+		["spec_draft_hf_repo"] = "То же что --hf-repo, но для модели черновика",
+		["spec_draft_threads"] = "Число потоков для генерации модели черновика (по умолчанию то же что --threads)",
+		["spec_draft_threads_batch"] = "Потоки для батча и промпта модели черновика",
+		["spec_draft_cpu_mask"] = "Маска привязки CPU для модели черновика. Дополняет cpu-range-draft",
+		["spec_draft_cpu_range"] = "Диапазоны CPU для привязки модели черновика",
+		["spec_draft_cpu_strict"] = "Строгое размещение CPU для модели черновика (по умолчанию то же что --cpu-strict)",
+		["spec_draft_prio"] = "Приоритет процесса/потока модели черновика: 0-normal, 1-medium, 2-high, 3-realtime",
+		["spec_draft_poll"] = "Polling для ожидания работы модели черновика (по умолчанию то же что --poll)",
+		["spec_draft_cpu_mask_batch"] = "Маска привязки CPU батча для модели черновика",
+		["spec_draft_cpu_strict_batch"] = "Строгое размещение CPU батча для модели черновика",
+		["spec_draft_prio_batch"] = "Приоритет процесса/потока батча модели черновика: 0-normal, 1-medium, 2-high, 3-realtime",
+		["spec_draft_poll_batch"] = "Polling для ожидания работы батча модели черновика",
+		["spec_draft_override_tensor"] = "Переопределить тип буфера тензора для модели черновика",
+		["spec_draft_cpu_moe"] = "Держать все веса MoE на CPU для модели черновика",
+		["spec_draft_n_cpu_moe"] = "Держать веса MoE первых N слоёв на CPU для модели черновика",
+		["spec_draft_n_max"] = "Число токенов для спекулятивного декодирования (по умолчанию 3)",
+		["spec_draft_n_min"] = "Мин. число токенов для спекуляции (по умолчанию 0)",
+		["spec_draft_p_split"] = "Вероятность разделения при спекуляции (по умолчанию 0.10)",
+		["spec_draft_p_min"] = "Мин. вероятность принятия токена черновика (greedy) (по умолчанию 0.00)",
+		["spec_draft_backend_sampling"] = "Offload сэмплирования модели черновика на бэкенд (по умолчанию включено)",
+		["spec_draft_device"] = "Список устройств через запятую для offloading модели черновика",
+		["spec_draft_ngl"] = "Макс. число слоёв модели черновика в VRAM: точное, 'auto' или 'all'",
+		["spec_draft_model"] = "Модель-черновик для спекулятивного декодирования (по умолчанию не используется)",
+		["spec_type"] = "Типы спекуляции через запятую. none — откл., draft-simple, draft-eagle3, draft-mtp, ngram-simple и др.",
+		["spec_ngram_mod_n_min"] = "Мин. число токенов для ngram-mod спекуляции (по умолчанию 48)",
+		["spec_ngram_mod_n_max"] = "Макс. число токенов для ngram-mod спекуляции (по умолчанию 64)",
+		["spec_ngram_mod_n_match"] = "Длина поиска для ngram-mod (по умолчанию 24)",
+		["spec_ngram_simple_size_n"] = "Размер N-граммы для ngram-simple, длина lookup",
+		["spec_ngram_simple_size_m"] = "Размер M-граммы для ngram-simple, длина draft",
+		["spec_ngram_simple_min_hits"] = "Мин. совпадений для ngram-simple (по умолчанию 1)",
+		["spec_ngram_map_k_size_n"] = "N-грамма для ngram-map-k, длина lookup",
+		["spec_ngram_map_k_size_m"] = "M-грамма для ngram-map-k, длина draft",
+		["spec_ngram_map_k_min_hits"] = "Мин. совпадений для ngram-map-k (по умолчанию 1)",
+		["spec_ngram_map_k4v_size_n"] = "N-грамма для ngram-map-k4v, длина lookup",
+		["spec_ngram_map_k4v_size_m"] = "M-грамма для ngram-map-k4v, длина draft",
+		["spec_ngram_map_k4v_min_hits"] = "Мин. совпадений для ngram-map-k4v (по умолчанию 1)",
+		["lookup_cache_static"] = "Путь к статическому lookup-кэшу для декодирования (не обновляется генерацией)",
+		["lookup_cache_dynamic"] = "Путь к динамическому lookup-кэшу (обновляется генерацией)",
+		["ctx_checkpoints"] = "Макс. число контрольных точек контекста на слот (по умолчанию 32)",
+		["checkpoint_min_step"] = "Мин. расстояние между контрольными точками в токенах (0 = без минимума, по умолч. 256)",
+		["cache_ram"] = "Макс. размер кэша в МиБ (-1 — без лимита, 0 — откл., по умолчанию 8192)",
+		["kv_unified"] = "Единый KV-буфер для всех последовательностей (по умолч. включено если слоты auto)",
+		["cache_idle_slots"] = "Сохранять свободные слоты в prompt cache при новой задаче, очищать при unified KV",
+		["context_shift"] = "Сдвиг контекста при бесконечной генерации текста (по умолчанию отключено)",
+		["reverse_prompt"] = "Остановить генерацию на PROMPT и вернуть управление в интерактивном режиме",
+		["special"] = "Вывод специальных токенов (по умолчанию false)",
+		["warmup"] = "Разогрев пустым проходом перед работой (по умолчанию включено)",
+		["spm_infill"] = "Использовать паттерн Suffix/Prefix/Middle для infill вместо Prefix/Suffix/Middle",
+		["pooling"] = "Тип пулинга для эмбеддингов: none, mean, cls, last, rank. По умолчанию из модели",
+		["parallel"] = "Число слотов сервера (-1 = auto)",
+		["cont_batching"] = "Непрерывный батчинг (dynamic batching) (по умолчанию включено)",
+		["mmproj"] = "Путь к файлу мультимодального проектора. Если используется -hf, можно опустить",
+		["mmproj_url"] = "URL файла мультимодального проектора",
+		["mmproj_auto"] = "Использовать файл mmpоjector если доступен (полезно с -hf). По умолчанию включено",
+		["mmproj_offload"] = "GPU offloading для мультимодального проектора (по умолчанию включено)",
+		["image_min_tokens"] = "Мин. токенов на изображение, только для vision-моделей с динамическим разрешением",
+		["image_max_tokens"] = "Макс. токенов на изображение, только для vision-моделей с динамическим разрешением",
+		["alias"] = "Псевдонимы модели через запятую (для API)",
+		["tags"] = "Теги модели через запятую (информационные, не используются для маршрутизации)",
+		["embd_normalize"] = "Нормализация эмбеддингов: -1=нет, 0=max abs int16, 1=taxicab, 2=euclidean (по умолчанию), >2=p-norm",
+		["host"] = "IP-адрес для прослушивания или UNIX socket (.sock). По умолчанию: 127.0.0.1",
+		["port"] = "Порт сервера (по умолчанию 8080)",
+		["reuse_port"] = "Разрешить нескольким сокетам привязаться к одному порту (по умолчанию отключено)",
+		["path"] = "Путь для обслуживания статических файлов",
+		["api_prefix"] = "Префикс пути сервера без завершающего слэша",
+		["webui_config"] = "[УСТАРЕВШИЙ, используйте --ui-config] JSON настроек WebUI по умолчанию",
+		["ui_config"] = "JSON настроек UI по умолчанию (переопределяет стандартные)",
+		["webui_config_file"] = "[УСТАРЕВШИЙ, используйте --ui-config-file] Файл JSON с настройками WebUI",
+		["ui_config_file"] = "Файл JSON с настройками UI по умолчанию",
+		["webui_mcp_proxy"] = "[УСТАРЕВШИЙ, используйте --ui-mcp-proxy] Экспериментально: MCP CORS proxy",
+		["ui_mcp_proxy"] = "Экспериментально: включить MCP CORS proxy — не включать в ненадёжных средах!",
+		["tools"] = "Экспериментально: встроенные инструменты для AI-агентов. \"all\" — все. read_file, file_glob_search, grep_search и др.",
+		["webui"] = "[УСТАРЕВШИЙ, используйте --ui] Включить Web UI",
+		["ui"] = "Включить Web UI (по умолчанию включено)",
+		["embedding"] = "Только режим эмбеддинга; использовать только с embedding-моделями",
+		["rerank"] = "Эндпоинт reranking на сервере (по умолчанию отключено)",
+		["api_key"] = "API ключ для аутентификации, несколько через запятую",
+		["api_key_file"] = "Путь к файлу с API-ключами",
+		["ssl_key_file"] = "Файл PEM-encoded SSL приватного ключа",
+		["ssl_cert_file"] = "Файл PEM-encoded SSL сертификата",
+		["chat_template_kwargs"] = "Доп. параметры для JSON template parser, валидный JSON объект",
+		["timeout"] = "Таймаут чтения/записи сервера в секундах (по умолчанию 3600)",
+		["sse_ping_interval"] = "Интервал SSE ping сервера в секундах (-1 = откл., по умолчанию 30)",
+		["threads_http"] = "Число потоков для обработки HTTP-запросов (-1 = auto)",
+		["cache_prompt"] = "Кэширование промпта (по умолчанию включено)",
+		["cache_reuse"] = "Мин. размер чанка для переиспользования кэша через KV shifting, требует cache-prompt",
+		["metrics"] = "Эндпоинт метрик Prometheus (по умолчанию отключено)",
+		["props"] = "Изменение глобальных свойств через POST /props (по умолчанию отключено)",
+		["slots"] = "Эндпоинт мониторинга слотов (по умолчанию включено)",
+		["slot_save_path"] = "Путь для сохранения KV-кэша слота",
+		["media_path"] = "Директория для локальных медиафайлов, доступ через file:// URL",
+		["models_dir"] = "Директория с моделями для router server",
+		["models_preset"] = "Путь к INI-файлу с пресетами моделей для router server",
+		["models_max"] = "Макс. число одновременно загруженных моделей в router (4, 0 = без лимита)",
+		["models_autoload"] = "Автозагрузка моделей в router server (по умолчанию включено)",
+		["jinja"] = "Использовать jinja template engine для чата (по умолчанию включено)",
+		["reasoning_format"] = "Формат рассуждений: none — без парсинга, deepseek — в reasoning_content, deepseek-legacy — теги <think> + reasoning_content",
+		["reasoning"] = "Рассуждения/мышление в чате ('on', 'off' или 'auto', по умолчанию auto)",
+		["reasoning_budget"] = "Бюджет токенов для мышления: -1 без лимита, 0 — немедленно завершить, N>0 — бюджет",
+		["reasoning_budget_message"] = "Сообщение перед end-of-thinking при исчерпании бюджета рассуждений",
+		["chat_template"] = "Пользовательский jinja chat template. Встроенные: bailing, deepseek, llama3 и др.",
+		["chat_template_file"] = "Файл с пользовательским jinja chat template",
+		["skip_chat_parsing"] = "Принудительно использовать простой парсер контента даже при наличии Jinja шаблона",
+		["prefill_assistant"] = "Prefill ответа ассистента если последнее сообщение от ассистента (по умолчанию включено)",
+		["slot_prompt_similarity"] = "Сходство промпта запроса со слотом для его использования (0.1, 0.0 = откл.)",
+		["lora_init_without_apply"] = "Загрузить LoRA-адаптеры без применения (применить позже через POST /lora-adapters)",
+		["sleep_idle_seconds"] = "Секунды простоя после которых сервер уснёт (-1 = откл.)",
+		["log_prompts_dir"] = "Логировать промпты в директорию (только для отладки)",
+		["model_vocoder"] = "Vocoder-модель для генерации аудио (по умолчанию не используется)",
+		["tts_use_guide_tokens"] = "Использовать guide tokens для улучшения распознавания слов в TTS",
+		["embd_gemma_default"] = "Использовать модель EmbeddingGemma по умолчанию (может скачать веса из интернета)",
+		["fim_qwen_1_5b_default"] = "Qwen 2.5 Coder 1.5B по умолчанию",
+		["fim_qwen_3b_default"] = "Qwen 2.5 Coder 3B по умолчанию",
+		["fim_qwen_7b_default"] = "Qwen 2.5 Coder 7B по умолчанию",
+		["fim_qwen_7b_spec"] = "Qwen 2.5 Coder 7B + 0.5B черновик для спекуляции",
+		["fim_qwen_14b_spec"] = "Qwen 2.5 Coder 14B + 0.5B черновик для спекуляции",
+		["fim_qwen_30b_default"] = "Qwen 3 Coder 30B A3B Instruct по умолчанию",
+		["gpt_oss_20b_default"] = "gpt-oss-20b по умолчанию",
+		["gpt_oss_120b_default"] = "gpt-oss-120b по умолчанию",
+		["vision_gemma_4b_default"] = "Gemma 3 4B QAT по умолчанию",
+		["vision_gemma_12b_default"] = "Gemma 3 12B QAT по умолчанию",
+		["spec_default"] = "Включить спекулятивное декодирование с настройками по умолчанию",
+		["rpc"] = "Список RPC-серверов через запятую (host:port)"
+	};
+
+	public static async Task<List<CliArgDefinition>?> ParseHelpAsync(string executablePath)
+	{
+		if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
+		{
+			return null;
+		}
+		try
+		{
+			ProcessStartInfo startInfo = new ProcessStartInfo
+			{
+				FileName = executablePath,
+				Arguments = "--help",
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				CreateNoWindow = true,
+				StandardOutputEncoding = Encoding.UTF8,
+				StandardErrorEncoding = Encoding.UTF8
+			};
+			using Process process = new Process
+			{
+				StartInfo = startInfo
+			};
+			process.Start();
+			Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+			Task<string> errorTask = process.StandardError.ReadToEndAsync();
+			using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10.0));
+			try
+			{
+				await process.WaitForExitAsync(cts.Token);
+			}
+			catch (OperationCanceledException)
+			{
+				try
+				{
+					process.Kill(entireProcessTree: true);
+				}
+				catch
+				{
+				}
+				return null;
+			}
+			string helpOutput = await outputTask + "\n" + await errorTask;
+			if (string.IsNullOrWhiteSpace(helpOutput))
+			{
+				return null;
+			}
+			return ParseArgumentDescriptions(helpOutput);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	public static List<CliArgDefinition> ParseArgumentDescriptions(string helpText)
+	{
+		List<CliArgDefinition> definitions = new List<CliArgDefinition>();
+		if (string.IsNullOrWhiteSpace(helpText))
+		{
+			return definitions;
+		}
+		string[] lines = helpText.Split('\n');
+		string category = "other";
+		CliArgDefinition cliArgDefinition = null;
+		List<string> descriptionLines = new List<string>();
+		foreach (string rawLine in lines)
+		{
+			string trimmedLine = rawLine.TrimStart();
+			if (trimmedLine.StartsWith("-----") && trimmedLine.Contains("params"))
+			{
+				category = ParseCategory(trimmedLine);
+			}
+			else if (trimmedLine.StartsWith("-"))
+			{
+				if (cliArgDefinition != null)
+				{
+					Finalize(cliArgDefinition, descriptionLines.ToList());
+					definitions.Add(cliArgDefinition);
+				}
+				int boundaryIndex = FindBoundary(rawLine);
+				string flagPart;
+				string descriptionPart;
+				if (boundaryIndex >= 0 && boundaryIndex < rawLine.Length)
+				{
+					flagPart = rawLine.Substring(0, boundaryIndex).TrimEnd();
+					descriptionPart = rawLine.Substring(boundaryIndex).TrimStart();
+				}
+				else
+				{
+					flagPart = rawLine.TrimEnd();
+					descriptionPart = "";
+				}
+				MatchCollection matchCollection = FlagRegex.Matches(flagPart);
+				List<string> flags = new List<string>();
+				foreach (Match match in matchCollection)
+				{
+					if (!string.IsNullOrEmpty(match.Value))
+					{
+						flags.Add(match.Value);
+					}
+				}
+				string primaryFlag = "";
+				using (IEnumerator<string> enumerator = flags.Where((string f) => f.StartsWith("--")).GetEnumerator())
+				{
+					if (enumerator.MoveNext())
+					{
+						primaryFlag = enumerator.Current;
+					}
+				}
+				if (string.IsNullOrEmpty(primaryFlag) && flags.Count > 0)
+				{
+					primaryFlag = flags[0];
+				}
+				cliArgDefinition = new CliArgDefinition
+				{
+					PrimaryFlag = primaryFlag,
+					Aliases = flags,
+					Category = category
+				};
+				descriptionLines.Clear();
+				if (!string.IsNullOrWhiteSpace(descriptionPart))
+				{
+					descriptionLines.Add(descriptionPart);
+				}
+			}
+			else if (cliArgDefinition != null && !string.IsNullOrWhiteSpace(rawLine) && rawLine.StartsWith(" "))
+			{
+				descriptionLines.Add(trimmedLine);
+			}
+		}
+		if (cliArgDefinition != null)
+		{
+			Finalize(cliArgDefinition, descriptionLines.ToList());
+			definitions.Add(cliArgDefinition);
+		}
+		return definitions;
+	}
+
+	private static void Finalize(CliArgDefinition arg, List<string> lines)
+	{
+		string description = string.Join(" ", lines).Trim();
+		Match match = Regex.Match(description, "\\(default:\\s*([^)]+)\\)");
+		if (match.Success)
+		{
+			arg.DefaultValue = CleanDefault(match.Groups[1].Value.Trim());
+		}
+		description = Regex.Replace(description, "\\s*\\(default:\\s*[^)]+\\)", "");
+		description = Regex.Replace(description, "\\s*\\(env:\\s*[^)]+\\)", "");
+		arg.DescriptionEn = description.Trim();
+		string argKey = NormalizeArgKey(arg.PrimaryFlag);
+		if (!string.IsNullOrEmpty(argKey) && RuDescriptions.TryGetValue(argKey, out string value))
+		{
+			string flagPrefix = ExtractFlagValuePrefix(description);
+			arg.DescriptionRu = (string.IsNullOrEmpty(flagPrefix) ? value : (flagPrefix + " " + value).Trim());
+		}
+		Match bracketMatch = Regex.Match(arg.PrimaryFlag + " " + string.Join(" ", lines), "\\[([^\\]]+)\\]");
+		if (bracketMatch.Success)
+		{
+			arg.AllowedValues = (from v in bracketMatch.Groups[1].Value.Split('|')
+				select v.Trim() into v
+				where !string.IsNullOrEmpty(v)
+				select v).ToList();
+		}
+		Match angleBracketMatch = Regex.Match(arg.PrimaryFlag + " " + string.Join(" ", lines), "<([^>]+)>");
+		if (arg.AllowedValues.Count == 0 && angleBracketMatch.Success)
+		{
+			arg.AllowedValues = (from v in angleBracketMatch.Groups[1].Value.Split('|')
+				select v.Trim() into v
+				where !string.IsNullOrEmpty(v)
+				select v).ToList();
+		}
+		int allowedValuesIndex = description.IndexOf("allowed values:", StringComparison.OrdinalIgnoreCase);
+		if (allowedValuesIndex >= 0)
+		{
+			string allowedValuesPart = description.Substring(allowedValuesIndex + "allowed values:".Length).TrimStart();
+			arg.AllowedValues = (from v in allowedValuesPart.Split(',')
+				select v.Trim() into v
+				where !string.IsNullOrEmpty(v)
+				select v).ToList();
+		}
+		arg.InferredArgType = InferArgType(arg);
+		static string ExtractFlagValuePrefix(string desc)
+		{
+			if (string.IsNullOrEmpty(desc))
+			{
+				return "";
+			}
+			Match flagValueMatch = Regex.Match(desc, "^--[\\w-]+\\s+\\S+");
+			if (flagValueMatch.Success)
+			{
+				return flagValueMatch.Value;
+			}
+			flagValueMatch = Regex.Match(desc, "^-([a-zA-Z])\\b\\s+\\S+");
+			if (flagValueMatch.Success)
+			{
+				return flagValueMatch.Value;
+			}
+			return "";
+		}
+	}
+
+	private static ArgType? InferArgType(CliArgDefinition arg)
+	{
+		foreach (string flag in new string[1] { arg.PrimaryFlag }.Concat(arg.Aliases))
+		{
+			if (!string.IsNullOrEmpty(flag))
+			{
+				ArgType? argType = CommandLineParser.GetArgType(flag.TrimStart('-'));
+				if (argType.HasValue)
+				{
+					return argType.Value;
+				}
+			}
+		}
+		if (arg.AllowedValues.Count == 2 && arg.AllowedValues.Contains<string>("on", StringComparer.OrdinalIgnoreCase) && arg.AllowedValues.Contains<string>("off", StringComparer.OrdinalIgnoreCase))
+		{
+			return ArgType.BoolOnOff;
+		}
+		string defaultValue = arg.DefaultValue.Trim();
+		if (!string.IsNullOrEmpty(defaultValue) && !IsDefaultLikeFlag(defaultValue))
+		{
+			if (int.TryParse(defaultValue, out var _))
+			{
+				return ArgType.Int;
+			}
+			if (float.TryParse(defaultValue, out var _))
+			{
+				return ArgType.Float;
+			}
+		}
+		return null;
+	}
+
+	private static bool IsDefaultLikeFlag(string value)
+	{
+		switch (value.ToLowerInvariant())
+		{
+		case "enabled":
+		case "disabled":
+		case "on":
+		case "off":
+		case "true":
+		case "false":
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	private static string CleanDefault(string value)
+	{
+		bool isFlagLike;
+		switch (value.ToLowerInvariant().Trim())
+		{
+		case "enabled":
+		case "disabled":
+		case "on":
+		case "off":
+		case "true":
+		case "false":
+			isFlagLike = true;
+			break;
+		default:
+			isFlagLike = false;
+			break;
+		}
+		if (isFlagLike)
+		{
+			return "";
+		}
+		return value;
+	}
+
+	private static int FindBoundary(string line)
+	{
+		for (int i = 0; i < Math.Min(line.Length - 1, 80); i++)
+		{
+			if ((line[i] == ' ' && line[i + 1] == ' ') || line[i] == '\t')
+			{
+				int j;
+				for (j = i; j < line.Length && (line[j] == ' ' || line[j] == '\t'); j++)
+				{
+				}
+				return j;
+			}
+		}
+		return -1;
+	}
+
+	private static string ParseCategory(string section)
+	{
+		string lowerSection = section.ToLowerInvariant();
+		if (lowerSection.Contains("common"))
+		{
+			return "common";
+		}
+		if (lowerSection.Contains("sampling"))
+		{
+			return "sampling";
+		}
+		if (lowerSection.Contains("speculative"))
+		{
+			return "speculative";
+		}
+		if (lowerSection.Contains("server") || lowerSection.Contains("example-specific"))
+		{
+			return "server";
+		}
+		return "other";
+	}
+
+	public static List<CliArgDefinition> FilterMissingFlags(List<CliArgDefinition> all, string? customArgs = null)
+	{
+		HashSet<string> customFlags = ParseCustomFlags(customArgs);
+		return all.Where((CliArgDefinition a) => !a.Aliases.Any((string f) => UiExposedFlags.Contains(f) || customFlags.Contains(f))).ToList();
+	}
+
+	private static HashSet<string> ParseCustomFlags(string? customArgs)
+	{
+		HashSet<string> customFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		if (string.IsNullOrWhiteSpace(customArgs))
+		{
+			return customFlags;
+		}
+		string[] parts = customArgs.Split(new char[1] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+		for (int i = 0; i < parts.Length; i++)
+		{
+			string token = parts[i].Trim();
+			if (token.StartsWith("-"))
+			{
+				customFlags.Add(token);
+			}
+		}
+		return customFlags;
+	}
+
+	private static string NormalizeArgKey(string flag)
+	{
+		if (string.IsNullOrEmpty(flag))
+		{
+			return "";
+		}
+		return flag.TrimStart('-').Replace("-", "_");
+	}
+}

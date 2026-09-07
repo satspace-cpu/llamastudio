@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>LlamaStudio</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace></RootNamespace>
+    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <BaseIntermediateOutputPath>obj-linux\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin-linux\</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj-linux/**;bin-linux/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="LlamaStudio/**/*.cs" Exclude="LlamaStudio/obj/**;LlamaStudio/bin/**;LlamaStudio/obj-linux/**;LlamaStudio/bin-linux/**" />
+    <Compile Include="CompiledAvaloniaXaml/**/*.cs" Exclude="CompiledAvaloniaXaml/obj/**;CompiledAvaloniaXaml/bin/**" />
+    <Compile Include="CommunityToolkit/**/*.cs" />
+    <Compile Include="Properties/AssemblyInfo.cs" />
+    <!-- The recovered XAML refers to this Avalonia resource.  The original
+         Windows bundle kept only app.ico, so the Linux project supplies its
+         PNG counterpart explicitly. -->
+    <AvaloniaResource Include="LlamaStudio/Assets/app-icon.png" Link="Assets/app-icon.png" />
+    <ProjectReference Include="..\LlamaStudio.Core\LlamaStudio.Core.csproj" />
+    <ProjectReference Include="..\LlamaStudio.Infrastructure\LlamaStudio.Infrastructure.csproj" />
+    <PackageReference Include="Avalonia" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.1" />
+    <PackageReference Include="Avalonia.Svg" Version="11.0.0" />
+    <PackageReference Include="Material.Icons.Avalonia" Version="2.1.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.12" />
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.0" />
+    <!-- Markdown.Avalonia (11.0.3) transitively provides the full Markdown
+         family (Full/Html/Svg/SyntaxHigh/Tight) plus ColorTextBlock and
+         ColorDocument — the exact set the original release bundled. -->
+    <PackageReference Include="Markdown.Avalonia" Version="11.0.3" />
+  </ItemGroup>
+
+
+  <!-- The recovered C# already contains the code emitted by MVVM Toolkit's
+       generators. Keep the 8.3 runtime for its internal helper types, but do
+       not run its generators a second time. -->
+  <Target Name="DisableRecoveredSourceGenerators" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

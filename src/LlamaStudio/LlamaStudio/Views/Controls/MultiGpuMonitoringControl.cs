@@ -1,0 +1,127 @@
+using System;
+using System.ComponentModel;
+using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
+using LlamaStudio;
+using LlamaStudio.Core.Models;
+using LlamaStudio.ViewModels;
+
+namespace LlamaStudio.Views.Controls;
+
+public sealed class MultiGpuMonitoringControl : UserControl
+{
+	private readonly StackPanel _content = new StackPanel { Spacing = 10 };
+	private readonly ScrollViewer _scrollViewer;
+	private MonitoringViewModel? _viewModel;
+	private bool _rebuildQueued;
+
+	public MultiGpuMonitoringControl()
+	{
+		_scrollViewer = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = _content };
+		Content = _scrollViewer;
+		PropertyChanged += (_, args) =>
+		{
+			if (args.Property == DataContextProperty)
+			{
+				SetViewModel(DataContext as MonitoringViewModel);
+			}
+		};
+	}
+
+	private void SetViewModel(MonitoringViewModel? viewModel)
+	{
+		if (_viewModel != null)
+		{
+			_viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+		}
+		_viewModel = viewModel;
+		if (_viewModel != null)
+		{
+			_viewModel.PropertyChanged += OnViewModelPropertyChanged;
+		}
+		Rebuild();
+	}
+
+	private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName is "GpuInfos" or "AllGpuVramText" or "AllGpuLoadText" or "AllGpuPowerText" or "RamUsedText" or "RamPercent" or "VramLabel" or "RamLabel" or "GpuTempLabel" or "GpuMemTempLabel" or "PowerLabel" or "GpuCoreLabel" or "FanLabel" or "AllGpusLabel" or "GpuLoadLabel" or "TotalGpuPowerLabel" or "ClockLabel" or "ComputeCapabilityLabel")
+		{
+			if (_rebuildQueued)
+			{
+				return;
+			}
+			_rebuildQueued = true;
+			Dispatcher.UIThread.Post(() =>
+			{
+				_rebuildQueued = false;
+				Rebuild();
+			});
+		}
+	}
+
+	private void Rebuild()
+	{
+		Vector offset = _scrollViewer.Offset;
+		_content.Children.Clear();
+		if (_viewModel == null || _viewModel.GpuInfos.Count <= 1)
+		{
+			IsVisible = false;
+			return;
+		}
+		IsVisible = true;
+		_content.Children.Add(new TextBlock { Text = _viewModel.AllGpusLabel, FontSize = 15, FontWeight = FontWeight.DemiBold });
+		StackPanel aggregate = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 18 };
+		aggregate.Children.Add(new TextBlock { Text = $"VRAM: {_viewModel.AllGpuVramText}" });
+		aggregate.Children.Add(new TextBlock { Text = $"{_viewModel.GpuLoadLabel}: {_viewModel.AllGpuLoadText}" });
+		aggregate.Children.Add(new TextBlock { Text = $"{_viewModel.PowerLabel}: {_viewModel.AllGpuPowerText}" });
+		_content.Children.Add(aggregate);
+		StackPanel ram = new StackPanel { Spacing = 3 };
+		ram.Children.Add(new TextBlock { Text = "RAM", FontWeight = FontWeight.DemiBold, Foreground = Brush("#55D6BE") });
+		AddBar(ram, _viewModel.RamLabel, _viewModel.RamPercent, _viewModel.RamUsedText, Brush("#10B981"));
+		_content.Children.Add(new Border { Padding = new Thickness(12), Child = ram, Background = ThemeBrushes.Get("GpuMonitorInner", "#111A2A"), CornerRadius = new CornerRadius(7) });
+		double totalPower = _viewModel.GpuInfos.Sum(gpu => gpu.PowerDrawWatts);
+		double totalPowerLimit = _viewModel.GpuInfos.Sum(gpu => gpu.PowerLimitWatts);
+		double totalPowerPercent = totalPowerLimit > 0 ? totalPower / totalPowerLimit * 100 : 0;
+		StackPanel power = new StackPanel { Spacing = 3 };
+		power.Children.Add(new TextBlock { Text = _viewModel.TotalGpuPowerLabel, FontWeight = FontWeight.DemiBold, Foreground = Brush("#F59E0B") });
+		AddBar(power, _viewModel.PowerLabel, totalPowerPercent, $"{totalPower:F0} / {totalPowerLimit:F0} W", Brush("#F59E0B"));
+		_content.Children.Add(new Border { Padding = new Thickness(12), Child = power, Background = ThemeBrushes.Get("GpuMonitorInner", "#111A2A"), CornerRadius = new CornerRadius(7) });
+		foreach (GpuInfo gpu in _viewModel.GpuInfos)
+		{
+			StackPanel metrics = new StackPanel { Spacing = 6 };
+			metrics.Children.Add(new TextBlock { Text = gpu.DisplayName, FontSize = 15, FontWeight = FontWeight.DemiBold });
+			AddBar(metrics, _viewModel.VramLabel, gpu.MemoryPercent, $"{gpu.MemoryUsedGb:F1} / {gpu.MemoryTotalGb:F1} GB", Brush("#3B82F6"));
+			AddBar(metrics, _viewModel.GpuCoreLabel, gpu.GpuUtilization, $"{gpu.GpuUtilization:F0}%", Brush("#8B5CF6"));
+			AddBar(metrics, _viewModel.PowerLabel, gpu.PowerPercent, $"{gpu.PowerDrawWatts:F0} / {gpu.PowerLimitWatts:F0} W", Brush("#F59E0B"));
+			AddBar(metrics, _viewModel.GpuTempLabel, Math.Min(100, gpu.TemperatureCelsius / 95 * 100), $"{gpu.TemperatureCelsius:F0} C", Brush("#10B981"));
+			if (gpu.MemoryTemperatureCelsius > 0)
+			{
+				AddBar(metrics, _viewModel.GpuMemTempLabel, Math.Min(100, gpu.MemoryTemperatureCelsius / 110 * 100), $"{gpu.MemoryTemperatureCelsius:F0} C", Brush("#EF4444"));
+			}
+			AddBar(metrics, _viewModel.FanLabel, gpu.FanSpeed, $"{gpu.FanSpeed}%", Brush("#06B6D4"));
+			metrics.Children.Add(new TextBlock { Text = $"{_viewModel.ClockLabel} {gpu.ClockMhz} MHz   {_viewModel.ComputeCapabilityLabel} {gpu.ComputeCapability:F1}", FontSize = 11 });
+			_content.Children.Add(new Border { Padding = new Thickness(12), Child = metrics, HorizontalAlignment = HorizontalAlignment.Stretch, Background = ThemeBrushes.Get("GpuMonitorBackground", "#17142B"), BorderBrush = ThemeBrushes.Get("ThemeBorder", "#3A4352"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(7) });
+		}
+		Dispatcher.UIThread.Post(() => _scrollViewer.Offset = offset, DispatcherPriority.Loaded);
+	}
+
+	private static void AddBar(StackPanel panel, string label, double value, string text, IBrush color)
+	{
+		StackPanel block = new StackPanel { Spacing = 2, HorizontalAlignment = HorizontalAlignment.Stretch };
+		Grid header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), HorizontalAlignment = HorizontalAlignment.Stretch };
+		header.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
+		TextBlock valueText = new TextBlock { Text = text, FontSize = 10, VerticalAlignment = VerticalAlignment.Center };
+		Grid.SetColumn(valueText, 1);
+		header.Children.Add(valueText);
+		block.Children.Add(header);
+		block.Children.Add(new ProgressBar { Value = Math.Max(0, Math.Min(100, value)), Maximum = 100, Height = 9, Foreground = color, HorizontalAlignment = HorizontalAlignment.Stretch });
+		panel.Children.Add(block);
+	}
+
+	private static SolidColorBrush Brush(string color) => new SolidColorBrush(Color.Parse(color));
+}
