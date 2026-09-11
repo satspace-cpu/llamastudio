@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Avalonia;
@@ -1015,7 +1016,21 @@ public class App : Application
 			}
 			IVersionCache versionCache = Services.GetRequiredService<IVersionCache>();
 			await versionCache.LoadAsync();
-			await versionCache.ScanAsync(settings.LlamaCppBaseDirectory);
+			// r96: do NOT block the UI thread (and the first window) on the
+			// llama.cpp scan: on Windows at boot every "llama-server.exe
+			// --version" probe can be slowed by the antivirus, delaying the
+			// window by a minute or more (the app looked like a silent zombie).
+			Task.Run(async delegate
+			{
+				try
+				{
+					await versionCache.ScanAsync(settings.LlamaCppBaseDirectory);
+				}
+				catch (Exception scanException)
+				{
+					System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "LlamaStudio-recovered.log"), $"{DateTime.Now:O} [SCAN] {scanException}\n");
+				}
+			});
 			ApplyTheme(settings.Theme);
 			ILocalizationService requiredService = Services.GetRequiredService<ILocalizationService>();
 			if (!string.IsNullOrEmpty(settings.Language))
@@ -1026,11 +1041,16 @@ public class App : Application
 		catch (Exception ex)
 		{
 			System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "LlamaStudio-recovered.log"), $"{DateTime.Now:O} [INIT] {ex}\n");
+			// r96: a failed init must not leave a windowless, trayless zombie —
+			// show the reason and exit (the user relaunches manually).
+			ShowStartupFailure("[INIT] инициализация", ex);
 			base.OnFrameworkInitializationCompleted();
+			(base.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
 			return;
 		}
 		if (base.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime classicDesktopStyleApplicationLifetime)
 		{
+			bool mainWindowIsVisible = false;
 			try
 			{
 				MainWindow mainWindow = (MainWindow)(classicDesktopStyleApplicationLifetime.MainWindow = Services.GetRequiredService<MainWindow>());
@@ -1048,15 +1068,44 @@ public class App : Application
 					{
 						Services.GetRequiredService<ILogService>().Warning("System tray is unavailable; closing the window will exit the application.", "Tray");
 					}
+					if (!IsTrayAvailable)
+					{
+						// r96: at Windows boot the notification area can be absent
+						// when the autostart task runs — retry adding the icon
+						// instead of leaving the app without a tray forever.
+						_ = Task.Run(async delegate
+						{
+							for (int trayAttempt = 1; trayAttempt <= 15 && !IsTrayAvailable; trayAttempt++)
+							{
+								await Task.Delay(2000);
+								if (_trayManager.TryReadd())
+								{
+									Dispatcher.UIThread.Post(delegate
+									{
+										IsTrayAvailable = true;
+									});
+									System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "LlamaStudio-recovered.log"), $"{DateTime.Now:O} [TRAY] icon added after retry {trayAttempt}\n");
+									break;
+								}
+							}
+						});
+					}
 				}
 				else if (OperatingSystem.IsLinux())
 				{
 					InitializeLinuxTray();
 				}
 				ISettings requiredService3 = Services.GetRequiredService<ISettings>();
-				if (requiredService3.ShowDesktopWindow && (!requiredService3.StartMinimized || !IsTrayAvailable))
+				// r98: the "Показывать окно программы" (ShowDesktopWindow) option is
+				// removed — the window is always available at startup (the old flag
+				// let the app run windowless and produced the "process without
+				// window/tray" state). "Запускать свёрнутым в трей" (StartMinimized)
+				// still starts the app in the tray; if the tray is not ready yet
+				// (Windows boot) the window is shown instead of disappearing.
+				if (!requiredService3.StartMinimized || !IsTrayAvailable)
 				{
 					mainWindow.Show();
+					mainWindowIsVisible = true;
 				}
 				if (requiredService3.StartMonitoringWindow)
 				{
@@ -1095,6 +1144,13 @@ public class App : Application
 			catch (Exception ex)
 			{
 				System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "LlamaStudio-recovered.log"), $"{DateTime.Now:O} [WINDOW] {ex}\n");
+				// r96: no silent zombies — if neither the window nor the tray
+				// is up, the user has nothing to click: show the error and exit.
+				if (mainWindowIsVisible == false && !IsTrayAvailable)
+				{
+					ShowStartupFailure("[WINDOW] окно и трей", ex);
+					classicDesktopStyleApplicationLifetime.Shutdown();
+				}
 			}
 			classicDesktopStyleApplicationLifetime.Exit += delegate
 			{
@@ -2034,5 +2090,24 @@ public class App : Application
 		{
 			_0021XamlIlPopulate(XamlIlRuntimeHelpers.CreateRootServiceProviderV3(null), P_0);
 		}
+	}	// r96: show a startup failure the user can actually see (a windowless
+	// process in Task Manager is useless for diagnosis). On Windows the native
+	// MessageBox works even when the Avalonia UI failed to come up.
+	private static void ShowStartupFailure(string context, Exception exception)
+	{
+		string details = $"LlamaStudio не удалось открыть окно: {context}.\n\n{exception.GetType().Name}: {exception.Message}\n\nПодробности: %TEMP%\\LlamaStudio-recovered.log";
+		if (OperatingSystem.IsWindows())
+		{
+			try
+			{
+				StartupMessageBoxW(IntPtr.Zero, details, "LlamaStudio — ошибка запуска", 0x10u);
+			}
+			catch
+			{
+			}
+		}
 	}
+
+	[DllImport("user32.dll", CharSet = CharSet.Unicode)]
+	private static extern int StartupMessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 }

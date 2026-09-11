@@ -7,6 +7,8 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using LlamaStudio.Core.Interfaces;
+using LlamaStudio.Core.Models;
 using LlamaStudio.Infrastructure.Llama;
 
 namespace LlamaStudio.Views.Controls;
@@ -29,6 +31,13 @@ public sealed class GpuPowerLimitControl : UserControl
 
 	private GpuPowerLimitItem[] _items = Array.Empty<GpuPowerLimitItem>();
 	private bool _busy;
+
+	// r94: per-profile power limits. The control is self-contained, so the
+	// hosting page injects two hooks: resolving the active profile and saving
+	// it back after an apply. Without them the control behaves as before.
+	public Func<Task<ServerProfile?>>? GetActiveProfileAsync;
+	public Func<ServerProfile, Task>? SaveProfileAsync;
+	private Dictionary<string, string>? _profileLimits;
 
 	public GpuPowerLimitControl()
 	{
@@ -71,6 +80,12 @@ public sealed class GpuPowerLimitControl : UserControl
 	{
 		try
 		{
+			// r94: remember what THIS profile last applied, to preselect below.
+			if (GetActiveProfileAsync != null)
+			{
+				ServerProfile? activeProfile = await GetActiveProfileAsync();
+				_profileLimits = activeProfile?.GpuPowerLimits;
+			}
 			_items = (await GpuPowerLimitManager.GetItemsAsync()).ToArray();
 			Dispatcher.UIThread.Invoke(BuildRows);
 		}
@@ -84,10 +99,21 @@ public sealed class GpuPowerLimitControl : UserControl
 	private void BuildRows()
 	{
 		_gpuRows.Children.Clear();
+		// r94: prefill the watts box with the profile's last applied value.
+		if (_profileLimits is { Count: > 0 })
+		{
+			string firstWatts = _profileLimits.Values.First();
+			if (double.TryParse(firstWatts.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _))
+			{
+				_wattsBox.Text = firstWatts;
+			}
+		}
 		foreach (GpuPowerLimitItem item in _items)
 		{
 			var gpuRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-			var includeCheck = new CheckBox { IsChecked = true, VerticalAlignment = VerticalAlignment.Center, Tag = item.Index, Foreground = _text };
+			// r94: preselect the cards this profile has limits for.
+			bool profileHasLimit = _profileLimits != null && _profileLimits.ContainsKey(item.Index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+			var includeCheck = new CheckBox { IsChecked = profileHasLimit, VerticalAlignment = VerticalAlignment.Center, Tag = item.Index, Foreground = _text };
 			var gpuNameLabel = new TextBlock
 			{
 				VerticalAlignment = VerticalAlignment.Center,
@@ -170,7 +196,9 @@ public sealed class GpuPowerLimitControl : UserControl
 				{
 					continue;
 				}
-				(bool ok, string message) = await GpuPowerLimitManager.SetPowerLimitAsync(index, watts);
+				// r89: pass the queried range for a client-side pre-check.
+				GpuPowerLimitItem? item = _items.FirstOrDefault(x => x.Index == index);
+				(bool ok, string message) = await GpuPowerLimitManager.SetPowerLimitAsync(index, watts, item?.MinWatts, item?.MaxWatts);
 				if (!ok)
 				{
 					anyFailed = true;
@@ -181,6 +209,32 @@ public sealed class GpuPowerLimitControl : UserControl
 			_status.Foreground = anyFailed
 				? new SolidColorBrush(Color.Parse("#EF4444"))
 				: new SolidColorBrush(Color.Parse("#10B981"));
+			// r94: remember the applied limits in the active profile so a
+			// different profile can keep a different limit for the same cards.
+			if (!anyFailed && GetActiveProfileAsync != null && SaveProfileAsync != null)
+			{
+				try
+				{
+					ServerProfile? activeProfile = await GetActiveProfileAsync();
+					if (activeProfile != null)
+					{
+						Dictionary<string, string> applied = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+						foreach (CheckBox check in checks.Where(c => c.IsChecked == true))
+						{
+							if (check.Tag is int appliedIndex && appliedIndex >= 0)
+							{
+								applied[appliedIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)] = watts.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+							}
+						}
+						activeProfile.GpuPowerLimits = applied;
+						await SaveProfileAsync(activeProfile);
+					}
+				}
+				catch
+				{
+					// best effort — the driver state is already applied
+				}
+			}
 			await RefreshAsync();
 		}
 		catch (Exception ex)

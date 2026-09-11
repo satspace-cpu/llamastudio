@@ -1219,7 +1219,8 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 		}
 	}
 
-	private async Task<ServerProfile?> GetActiveProfileAsync()
+	// r94: public so the GpuPowerLimitControl can persist per-profile power limits.
+	public async Task<ServerProfile?> GetActiveProfileAsync()
 	{
 		ServerProfile serverProfile = null;
 		if (!string.IsNullOrWhiteSpace(_settings.LastSelectedProfileId))
@@ -1232,6 +1233,8 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 		}
 		return serverProfile;
 	}
+	// r94: used by the GpuPowerLimitControl after a successful apply.
+	public Task<string> SaveProfileAsync(ServerProfile profile) => _profileManager.SaveProfileAsync(profile);
 
 	[RelayCommand]
 	private void ToggleMonitoring()

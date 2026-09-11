@@ -1458,7 +1458,7 @@ public class LlamaReleasesViewModel : ObservableObject
 			string rootPath = (Path.GetPathRoot(fullPath) ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 			if (string.Equals(fullPath, rootPath, StringComparison.OrdinalIgnoreCase))
 			{
-				await _dialog.ShowErrorAsync("Выберите папку с версиями llama.cpp, а не корень диска. Например: C:\\LlamaServers\\ или C:\\Users\\info\\AppData\\Roaming\\LlamaStudio\\.");
+				await _dialog.ShowErrorAsync("Выберите папку с версиями llama.cpp, а не корень диска. Например: C:\\LlamaServers\\ или C:\\Users\\<имя>\\AppData\\Roaming\\LlamaStudio\\.");
 				return;
 			}
 			_settings.LlamaCppBaseDirectory = path;

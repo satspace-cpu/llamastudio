@@ -371,7 +371,7 @@ public sealed class RpcSettingsControl : UserControl
 
         var serverPath = new TextBox
         {
-            Watermark = @"C:\Users\info\AppData\Roaming\LlamaStudio\b10107-cuda12x\ggml-rpc-server.exe",
+            Watermark = @"C:\Users\<username>\AppData\Roaming\LlamaStudio\<build>\ggml-rpc-server.exe",
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Background = ThemeBrushes.Get("ThemeInputBackground", "#111A2A"),
             Foreground = ThemeBrushes.Get("ThemeTextPrimary", "#F4F7FB"),

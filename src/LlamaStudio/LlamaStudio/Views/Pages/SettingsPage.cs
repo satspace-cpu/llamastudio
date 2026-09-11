@@ -578,7 +578,8 @@ public class SettingsPage : UserControl
 		Avalonia.Controls.Controls children25 = wrapPanelRef.Children;		StackPanel showDesktopWindow;
 		StackPanel showDesktopWindowBase = (showDesktopWindow = new StackPanel());
 		((ISupportInitialize)showDesktopWindowBase).BeginInit();
-		children25.Add(showDesktopWindowBase);
+		// r97: the "Показывать окно программы" toggle is removed (the window is
+		// always shown at startup) — the control is built but not attached.
 		StackPanel showDesktopWindowEnd = (stackPanelRef = showDesktopWindow);
 		context.PushParent(stackPanelRef);
 		StackPanel showDesktopWindowControl = stackPanelRef;

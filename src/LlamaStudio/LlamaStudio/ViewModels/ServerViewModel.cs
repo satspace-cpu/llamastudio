@@ -2146,6 +2146,13 @@ public class ServerViewModel : ObservableObject
 				_draftModelPath = value;
 				ApplyMuseDflashRecommendation();
 				OnPropertyChanged(CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DraftModelPath);
+				// r93: a draft model path without the master toggle on produces no
+				// -md / --spec-* flags in the command line — turn it on automatically.
+				if (!_isInitializing && !_isApplyingProfile && !SpeculativeDecoding
+					&& !string.IsNullOrWhiteSpace(value))
+				{
+					SpeculativeDecoding = true;
+				}
 			}
 		}
 	}
@@ -3254,6 +3261,16 @@ public class ServerViewModel : ObservableObject
 				_specType = value;
 				OnPropertyChanged(CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SpecType);
 				OnPropertyChanged(nameof(CanPinDraftModelToLocal));
+				// r93: picking a speculative type implies the user wants speculative
+				// decoding on — otherwise the command line silently drops --spec-type,
+				// -md and all draft parameters (EffectiveSpecType filters every
+				// draft-* type out while SpeculativeDecoding is off).
+				if (!_isInitializing && !_isApplyingProfile && !SpeculativeDecoding
+					&& !string.IsNullOrWhiteSpace(value)
+					&& !value.Equals("none", StringComparison.OrdinalIgnoreCase))
+				{
+					SpeculativeDecoding = true;
+				}
 			}
 		}
 	}
@@ -5727,7 +5744,7 @@ public class ServerViewModel : ObservableObject
 		string? folder = GetSelectedRpcServerFolderName(profileVersion);
 		return string.IsNullOrWhiteSpace(folder)
 			? string.Empty
-			: $"C:\\Users\\info\\AppData\\Roaming\\LlamaStudio\\{folder}\\ggml-rpc-server.exe";
+			: System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LlamaStudio", folder, "ggml-rpc-server.exe");
 	}
 
 	public async Task StartRpcServerAsync()
@@ -6078,6 +6095,26 @@ public class ServerViewModel : ObservableObject
 		}
 		OnPropertyChanged("SelectedGpuDeviceText");
 		OnPropertyChanged("RecommendedTensorSplitText");
+		// r94: the card set changed — the stored tensor split is for the OLD set
+		// (e.g. "33,33,34" for 3 cards). Recalculate it now, otherwise the command
+		// keeps the stale -ts until the user manually flips the split mode, and the
+		// profile saves the mismatched pair (2 cards + 3-way -ts).
+		if (GpuSplitMode == GpuSplitMode.Tensor)
+		{
+			int selectedCount = GetOrderedSelectedGpus().Count;
+			if (selectedCount <= 1)
+			{
+				TensorSplit = string.Empty;
+			}
+			else
+			{
+				int splitCount = TensorSplit.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+				if (splitCount != selectedCount)
+				{
+					TensorSplit = string.Join(",", CalculateRecommendedSplit(GetOrderedSelectedGpus()));
+				}
+			}
+		}
 		AutoSaveProfile();
 		UpdateCommandLinePreview();
 	}
@@ -6135,9 +6172,16 @@ public class ServerViewModel : ObservableObject
 		{
 			GpuLayers = "all";
 		}
-		if (GpuSplitMode == GpuSplitMode.Tensor && GetOrderedSelectedGpus().Count > 1 && string.IsNullOrWhiteSpace(TensorSplit))
+		if (GpuSplitMode == GpuSplitMode.Tensor && GetOrderedSelectedGpus().Count > 1)
 		{
-			TensorSplit = string.Join(",", CalculateRecommendedSplit(GetOrderedSelectedGpus()));
+			int selectedCount = GetOrderedSelectedGpus().Count;
+			int splitCount = TensorSplit.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+			// r94: empty (fill it) OR stale (parts for a different card count — a
+			// profile saved before the selection was changed).
+			if (string.IsNullOrWhiteSpace(TensorSplit) || splitCount != selectedCount)
+			{
+				TensorSplit = string.Join(",", CalculateRecommendedSplit(GetOrderedSelectedGpus()));
+			}
 		}
 		if (GpuSplitMode != GpuSplitMode.Tensor)
 		{
@@ -6560,19 +6604,36 @@ public class ServerViewModel : ObservableObject
 			await _dialog.ShowErrorAsync(_loc.T("dialog.select_profile_first"));
 			return;
 		}
-		List<ServerProfile> others = Profiles.Where((ServerProfile p) => p.Id != SelectedProfile.Id).ToList();
+		// r94: hidden profiles (model file removed) must be available as COPY
+		// SOURCES — e.g. migrating a setup to a newer, bigger model file.
+		// The regular profile selector keeps them hidden (LoadProfiles).
+		List<ServerProfile> others = _profileManager.GetAllProfiles().Where((ServerProfile p) => p.Id != SelectedProfile.Id).ToList();
 		if (others.Count == 0)
 		{
 			await _dialog.ShowErrorAsync(_loc.T("dialog.no_other_profiles"));
 			return;
 		}
-		string selectedName = await _dialog.ShowProfileSelectAsync(_loc.T("dialog.copy_settings_title"), string.Format(_loc.T("server.copy_to_profile_fmt"), SelectedProfile.Name), others.Select((ServerProfile p) => p.Name));
+		string Decorate(ServerProfile p) => HasMissingModel(p) ? p.Name + " (файлы модели удалены)" : p.Name;
+		string selectedName = await _dialog.ShowProfileSelectAsync(_loc.T("dialog.copy_settings_title"), string.Format(_loc.T("server.copy_to_profile_fmt"), SelectedProfile.Name), others.Select(Decorate));
 		if (selectedName != null)
 		{
-			ServerProfile serverProfile = others.FirstOrDefault((ServerProfile p) => p.Name == selectedName);
+			ServerProfile serverProfile = others.FirstOrDefault((ServerProfile p) => Decorate(p) == selectedName);
 			if (serverProfile != null)
 			{
+				// The source model file no longer exists: keep the target's own
+				// model/mmproj/draft paths instead of pointing them at missing files.
+				bool sourceModelMissing = HasMissingModel(serverProfile);
+				string keepModel = sourceModelMissing ? ModelPath : string.Empty;
+				string keepMmproj = sourceModelMissing ? MmprojPath : string.Empty;
+				string keepDraft = sourceModelMissing ? DraftModelPath : string.Empty;
 				ApplyProfileToSettings(serverProfile);
+				if (sourceModelMissing)
+				{
+					ModelPath = keepModel;
+					MmprojPath = keepMmproj;
+					DraftModelPath = keepDraft;
+					UpdateDisplayNames();
+				}
 				UpdateCommandLinePreview();
 				_log.Information($"Copied settings from \"{serverProfile.Name}\" to \"{SelectedProfile.Name}\"", "Server");
 				await _dialog.ShowSuccessAsync(string.Format(_loc.T("dialog.copy_success"), serverProfile.Name));

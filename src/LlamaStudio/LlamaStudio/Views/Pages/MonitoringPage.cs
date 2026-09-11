@@ -96,7 +96,13 @@ public class MonitoringPage : UserControl
 		if (Content is ScrollViewer contentScrollViewer && contentScrollViewer.Content is StackPanel rootStackPanel)
 		{
 			rootStackPanel.Children.Add(new LlamaStudio.Views.Controls.MultiGpuMonitoringControl { DataContext = vm });
-			rootStackPanel.Children.Add(new LlamaStudio.Views.Controls.GpuPowerLimitControl());
+			// r94: persist per-profile GPU power limits (load on refresh, save on apply).
+var powerControl = new LlamaStudio.Views.Controls.GpuPowerLimitControl
+{
+	GetActiveProfileAsync = () => vm.GetActiveProfileAsync(),
+	SaveProfileAsync = vm.SaveProfileAsync
+};
+rootStackPanel.Children.Add(powerControl);
 		}
 	}
 

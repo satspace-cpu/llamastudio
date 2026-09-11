@@ -188,6 +188,34 @@ public class TrayManager : IDisposable
 		}
 	}
 
+	// r96: retry after the initial NIM_ADD failed. At Windows boot the
+	// notification area (explorer) can be absent when the autostart task runs,
+	// so the first Shell_NotifyIcon is rejected and the icon never appears.
+	public bool TryReadd()
+	{
+		if (_hwndTray == IntPtr.Zero)
+		{
+			Initialize();
+			return IsAvailable;
+		}
+		if (IsAvailable)
+		{
+			return true;
+		}
+		try
+		{
+			IsAvailable = Shell_NotifyIcon(0u, ref _nid);
+			if (IsAvailable)
+			{
+				_log.Information("Notification-area icon added on retry", "Tray");
+			}
+		}
+		catch
+		{
+		}
+		return IsAvailable;
+	}
+
 	private static nint CreateTrayIcon()
 	{
 		try

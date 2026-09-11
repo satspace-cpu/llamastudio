@@ -1360,7 +1360,7 @@ public class ModelsPage : UserControl
 					await vm.HfFetchRepoCommand.ExecuteAsync(null);
 				}
 			};
-			return useAsMmprojButtonInit;
+			return useAsMmprojButtonRefBase;
 		});
 	}
 

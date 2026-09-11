@@ -34,3 +34,20 @@ public interface IProfileManager
 
 	Task<ServerProfile?> GetDefaultProfileAsync();
 }
+
+/// <summary>r94: helper to resolve the profile the user is currently working with.</summary>
+public static class ActiveProfileHelper
+{
+	public static async Task<ServerProfile?> GetActiveProfileAsync(IProfileManager manager, ISettings settings)
+	{
+		if (manager == null || settings == null)
+		{
+			return null;
+		}
+		if (string.IsNullOrWhiteSpace(settings.LastSelectedProfileId))
+		{
+			return null;
+		}
+		return await manager.GetProfileAsync(settings.LastSelectedProfileId);
+	}
+}

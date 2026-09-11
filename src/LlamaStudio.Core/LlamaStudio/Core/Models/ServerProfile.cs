@@ -199,6 +199,11 @@ public class ServerProfile : INotifyPropertyChanged
 	[JsonPropertyName("selectedGpuIndices")]
 	public int[] SelectedGpuIndices { get; set; } = Array.Empty<int>();
 
+	// r94: per-GPU power limits last applied through this profile (index -> watts).
+	// Different profiles may keep different limits for the same cards.
+	[JsonPropertyName("gpuPowerLimits")]
+	public Dictionary<string, string> GpuPowerLimits { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
 	[JsonPropertyName("flashAttention")]
 	public bool FlashAttention { get; set; } = true;
 

@@ -120,7 +120,13 @@ public class DashboardPage : UserControl
 		if (Content is ScrollViewer pageScrollViewer && pageScrollViewer.Content is StackPanel stackPanel)
 		{
 			stackPanel.Children.Add(new LlamaStudio.Views.Controls.DashboardGpuMonitoringControl { DataContext = viewModel });
-			stackPanel.Children.Add(new LlamaStudio.Views.Controls.GpuPowerLimitControl());
+			// r94: persist per-profile GPU power limits (load on refresh, save on apply).
+var powerControl = new LlamaStudio.Views.Controls.GpuPowerLimitControl
+{
+	GetActiveProfileAsync = () => viewModel.GetActiveProfileAsync(),
+	SaveProfileAsync = viewModel.SaveProfileAsync
+};
+stackPanel.Children.Add(powerControl);
 		}
 	}
 
