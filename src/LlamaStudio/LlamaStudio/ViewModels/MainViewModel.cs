@@ -430,8 +430,11 @@ public class MainViewModel : ObservableObject
 
 	private void OpenLlamaServerInBrowser()
 	{
-		string host = string.IsNullOrWhiteSpace(_settings.DefaultHost) ? "127.0.0.1" : _settings.DefaultHost.Trim();
-		int port = _settings.DefaultPort > 0 ? _settings.DefaultPort : 8080;
+		ServerProfile? profile = _server.SelectedProfile;
+		string host = !string.IsNullOrWhiteSpace(profile?.Host)
+			? profile.Host.Trim()
+			: (string.IsNullOrWhiteSpace(_settings.DefaultHost) ? "127.0.0.1" : _settings.DefaultHost.Trim());
+		int port = profile?.Port > 0 ? profile.Port : (_settings.DefaultPort > 0 ? _settings.DefaultPort : 8080);
 
 		if (host is "0.0.0.0" or "::")
 		{
