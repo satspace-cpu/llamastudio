@@ -149,7 +149,9 @@ public class MainViewModel : ObservableObject
 
 	public string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 
-	public string WebUiStatusText => _webUiService.IsRunning ? "Веб-сервер запущен" : "Веб-сервер выключен";
+	public string WebUiStatusText => _webUiService.IsRunning
+		? global::LlamaStudio.NativeLanguage.Text("Веб-сервер запущен", "Web server is running")
+		: global::LlamaStudio.NativeLanguage.Text("Веб-сервер выключен", "Web server is stopped");
 
 	public string WebUiAddress
 	{
@@ -713,7 +715,7 @@ public class MainViewModel : ObservableObject
 					catch
 					{
 					}
-					IDisposable loadingWin = _dialog.ShowLoading(string.Format(_loc.T("server.restart_profile"), profile.Name), "Загрузка");
+					IDisposable loadingWin = _dialog.ShowLoading(string.Format(_loc.T("server.restart_profile"), profile.Name), global::LlamaStudio.NativeLanguage.Text("Загрузка", "Loading"));
 					Task.Run(async delegate
 					{
 						try

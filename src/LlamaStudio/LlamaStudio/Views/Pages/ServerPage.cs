@@ -5042,7 +5042,7 @@ public class ServerPage : UserControl
 		((ISupportInitialize)draftLocalLabel).BeginInit();
 		draftLocalPanel.Children.Add(draftLocalLabel);
 		context.PushParent(draftLocalLabel);
-		draftLocalLabel.Text = "Draft-модель только на локальную GPU";
+		draftLocalLabel.Text = global::LlamaStudio.NativeLanguage.Text("Draft-модель только на локальную GPU", "Draft model on local GPU only");
 		draftLocalLabel.FontSize = 12.0;
 		draftLocalLabel.Foreground = new ImmutableSolidColorBrush(4293257195u);
 		draftLocalLabel.VerticalAlignment = VerticalAlignment.Center;

@@ -105,7 +105,7 @@ public sealed class RpcSettingsControl : UserControl
 
         var host = new TextBox
         {
-            Watermark = "например, 192.168.1.100",
+            Watermark = global::LlamaStudio.NativeLanguage.Text("например, 192.168.1.100", "for example, 192.168.1.100"),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Background = ThemeBrushes.Get("ThemeInputBackground", "#111A2A"),
             Foreground = ThemeBrushes.Get("ThemeTextPrimary", "#F4F7FB"),

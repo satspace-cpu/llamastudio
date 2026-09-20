@@ -1522,6 +1522,24 @@ var byId=window.WEB_TIP_BY_ID;
 for(var id in byId){var e2=document.getElementById(id);if(e2&&dict[byId[id]])e2.setAttribute('data-tip',dict[byId[id]]);}
 }catch(e){}
 };
+// v1.4.2 leaves a few monitoring and support labels untranslated.
+Object.assign(window.WEB_EN,{
+'Все GPU':'All GPUs',
+'Мощность всех GPU':'All-GPU power',
+'Лимит мощности GPU':'GPU power limit',
+'Ватты:':'Watts:',
+'Применить к выбранным':'Apply to selected',
+'Русский':'Russian',
+'Официальный канал: Llama Studio official':'Official channel: Llama Studio official',
+'Чат поддержки: Llama Studio | Чат поддержки':'Support chat: Llama Studio | Support chat',
+'Бот быстрой помощи: @LlamaStudioSupport_bot':'Quick-help bot: @LlamaStudioSupport_bot'
+});
+window.WEB_EN_PARTS={
+' сохранено':' saved',
+' токенов/с':' tokens/s',
+' — лимит ':' — limit ',
+' W · сейчас ':' W · now '
+};
 window.t=function(s){if(typeof s!=='string'||!s)return s;if(window.WEB_LANG==='en'){var v=window.WEB_EN[s];if(v!==undefined)return v}return s};
 var I18N_ATTRS=['placeholder','title','aria-label','alt'];
 var _orig=new WeakMap();
@@ -1538,13 +1556,20 @@ if(en!==undefined){
 if(!_orig.has(n))_orig.set(n,txt);
 var lead=txt.match(/^\s*/)[0],trail=txt.match(/\s*$/)[0];
 n.nodeValue=lead+en+trail;
+}else{
+var partial=txt;
+for(var part in window.WEB_EN_PARTS)partial=partial.split(part).join(window.WEB_EN_PARTS[part]);
+if(partial!==txt){
+if(!_orig.has(n))_orig.set(n,txt);
+n.nodeValue=partial;
+}
 }}else{
 var orig=_orig.get(n);
 if(orig!==undefined){
 var en2=window.WEB_EN[orig];
-if(en2!==undefined&&txt.trim()===en2){
+if((en2!==undefined&&txt.trim()===en2)||en2===undefined){
 var lead=txt.match(/^\s*/)[0],trail=txt.match(/\s*$/)[0];
-n.nodeValue=lead+orig+trail;
+n.nodeValue=en2!==undefined?lead+orig+trail:orig;
 _orig.delete(n);
 }}}
 }
