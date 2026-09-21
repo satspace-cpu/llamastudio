@@ -1271,8 +1271,11 @@ public WebUiService(ISettings settings, IServerManager serverManager, IProfileMa
 		foreach (string item in target[(separator + 1)..].Split('&', StringSplitOptions.RemoveEmptyEntries))
 		{
 			string[] pair = item.Split('=', 2);
-			string key = Uri.UnescapeDataString(pair[0]);
-			string value = pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : string.Empty;
+			// URLSearchParams and form-style query strings encode spaces as '+'.
+			// Decode that representation before percent-decoding so local Windows paths
+			// such as "C:\\Models\\Qwen 4-bit" survive a browser round trip.
+			string key = Uri.UnescapeDataString(pair[0].Replace("+", " "));
+			string value = pair.Length == 2 ? Uri.UnescapeDataString(pair[1].Replace("+", " ")) : string.Empty;
 			result[key] = value;
 		}
 		return result;
