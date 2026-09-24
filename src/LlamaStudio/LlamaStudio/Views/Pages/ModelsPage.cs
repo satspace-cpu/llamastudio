@@ -2271,7 +2271,7 @@ public class ModelsPage : UserControl
 			Padding = new Thickness(20.0, 8.0, 20.0, 8.0),
 			CornerRadius = new CornerRadius(8.0, 8.0, 8.0, 8.0),
 			FontWeight = FontWeight.DemiBold,
-			Content = "Пауза"
+			Content = global::LlamaStudio.NativeLanguage.Text("Пауза", "Pause")
 		};
 		pauseButton.Bind(Button.CommandProperty, new Binding("HfPauseDownloadsCommand"));
 		pauseButton.Bind(InputElement.IsEnabledProperty, new Binding("IsHfDownloading"));

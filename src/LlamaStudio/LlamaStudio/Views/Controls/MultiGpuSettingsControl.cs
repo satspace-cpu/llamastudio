@@ -142,8 +142,8 @@ public sealed class MultiGpuSettingsControl : UserControl
 			_content.Children.Add(checkBox);
 		}
 
-		TextBlock splitModeLabel = new TextBlock { Text = "Режим распределения", FontSize = 13, FontWeight = FontWeight.DemiBold, Margin = new Thickness(0, 4, 0, 0) };
-		ToolTip.SetTip(splitModeLabel, "Тензоры задают доли для выбранных GPU; слои оставляют распределение llama.cpp.");
+		TextBlock splitModeLabel = new TextBlock { Text = global::LlamaStudio.NativeLanguage.Text("Режим распределения", "Distribution mode"), FontSize = 13, FontWeight = FontWeight.DemiBold, Margin = new Thickness(0, 4, 0, 0) };
+		ToolTip.SetTip(splitModeLabel, global::LlamaStudio.NativeLanguage.Text("Тензоры задают доли для выбранных GPU; слои оставляют распределение llama.cpp.", "Tensors assign shares to selected GPUs; layers leave distribution to llama.cpp."));
 		_content.Children.Add(splitModeLabel);
 		_content.Children.Add(CreateSplitModeRadios());
 
@@ -164,11 +164,11 @@ public sealed class MultiGpuSettingsControl : UserControl
 			_content.Children.Add(new TextBlock { Text = _viewModel.ModelDistributionLabel });
 			_content.Children.Add(CreateDistributionPanel(ordered));
 			StackPanel presets = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Left };
-			Button byVram = new Button { Content = "По VRAM", Padding = new Thickness(10, 4) };
+			Button byVram = new Button { Content = global::LlamaStudio.NativeLanguage.Text("По VRAM", "By VRAM"), Padding = new Thickness(10, 4) };
 			byVram.Click += (_, _) => _viewModel.ApplyVramTensorSplit();
-			Button equal = new Button { Content = "Поровну", Padding = new Thickness(10, 4) };
+			Button equal = new Button { Content = global::LlamaStudio.NativeLanguage.Text("Поровну", "Equal"), Padding = new Thickness(10, 4) };
 			equal.Click += (_, _) => _viewModel.ApplyEqualTensorSplit();
-			Button auto = new Button { Content = "Автоматически", Padding = new Thickness(10, 4) };
+			Button auto = new Button { Content = global::LlamaStudio.NativeLanguage.Text("Автоматически", "Automatic"), Padding = new Thickness(10, 4) };
 			auto.Click += (_, _) => _viewModel.ApplyAutomaticTensorSplit();
 			presets.Children.Add(byVram);
 			presets.Children.Add(equal);
@@ -194,8 +194,8 @@ public sealed class MultiGpuSettingsControl : UserControl
 		}
 		(GpuSplitMode mode, string label)[] options = new (GpuSplitMode, string)[2]
 		{
-			(GpuSplitMode.Layer, "Слои"),
-			(GpuSplitMode.Tensor, "Тензоры")
+			(GpuSplitMode.Layer, global::LlamaStudio.NativeLanguage.Text("Слои", "Layers")),
+			(GpuSplitMode.Tensor, global::LlamaStudio.NativeLanguage.Text("Тензоры", "Tensors"))
 		};
 		foreach ((GpuSplitMode mode, string label) in options)
 		{
@@ -206,7 +206,7 @@ public sealed class MultiGpuSettingsControl : UserControl
 				IsChecked = current == mode,
 				VerticalAlignment = VerticalAlignment.Center
 			};
-			ToolTip.SetTip(radio, "Тензоры задают доли для выбранных GPU; слои оставляют распределение llama.cpp.");
+			ToolTip.SetTip(radio, global::LlamaStudio.NativeLanguage.Text("Тензоры задают доли для выбранных GPU; слои оставляют распределение llama.cpp.", "Tensors assign shares to selected GPUs; layers leave distribution to llama.cpp."));
 			GpuSplitMode captured = mode;
 			radio.IsCheckedChanged += (_, _) => { if (radio.IsChecked == true) _viewModel?.SetGpuSplitMode(captured); };
 			panel.Children.Add(radio);

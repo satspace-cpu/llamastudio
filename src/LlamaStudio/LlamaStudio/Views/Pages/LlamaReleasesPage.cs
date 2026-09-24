@@ -886,7 +886,7 @@ public class LlamaReleasesPage : UserControl
 		TextBlock folderSectionLabelBase = (folderSectionLabel = new TextBlock());
 		((ISupportInitialize)folderSectionLabelBase).BeginInit();
 		children3.Add(folderSectionLabelBase);
-		folderSectionLabel.Text = "Папка с серверами llama.cpp";
+		folderSectionLabel.Text = global::LlamaStudio.NativeLanguage.Text("Папка с серверами llama.cpp", "llama.cpp server folder");
 		folderSectionLabel.FontSize = 14.0;
 		folderSectionLabel.FontWeight = FontWeight.DemiBold;
 		folderSectionLabel.Foreground = ThemeBrushes.Get("SectionLabel", "#E2E8F0");
@@ -944,7 +944,7 @@ public class LlamaReleasesPage : UserControl
 		Binding browseCommandBinding = reflectionBindingExtension3.ProvideValue(context);
 		context.ProvideTargetProperty = null;
 		AvaloniaObjectExtensions.Bind(browseButtonControl, commandProperty, browseCommandBinding);
-		browseButtonControl.Content = "Обзор...";
+		browseButtonControl.Content = global::LlamaStudio.NativeLanguage.Text("Обзор...", "Browse...");
 		browseButtonControl.Background = ThemeBrushes.Get("BtnPrimary", "#6366F1");
 		browseButtonControl.Foreground = ThemeBrushes.Get("ThemeTextOnAccent", "#F0F2F5");
 		browseButtonControl.Padding = new Thickness(12.0, 8.0, 12.0, 8.0);
@@ -1293,7 +1293,7 @@ public class LlamaReleasesPage : UserControl
 		Binding cancelCommandBinding = new ReflectionBindingExtension("CancelDownloadCommand").ProvideValue(context);
 		context.ProvideTargetProperty = null;
 		AvaloniaObjectExtensions.Bind(cancelDownloadButtonControl, commandProperty3, cancelCommandBinding);
-		cancelDownloadButtonControl.Content = "Отменить";
+		cancelDownloadButtonControl.Content = global::LlamaStudio.NativeLanguage.Text("Отменить", "Cancel");
 		cancelDownloadButtonControl.Background = ThemeBrushes.Get("BtnSuccess", "#2DA44E");
 		cancelDownloadButtonControl.Foreground = ThemeBrushes.Get("ThemeTextOnAccent", "#F0F2F5");
 		cancelDownloadButtonControl.Padding = new Thickness(10.0, 4.0, 10.0, 4.0);
@@ -1569,7 +1569,7 @@ public class LlamaReleasesPage : UserControl
 		TextBlock noServersTitleBase = (noServersTitle = new TextBlock());
 		((ISupportInitialize)noServersTitleBase).BeginInit();
 		children32.Add(noServersTitleBase);
-		noServersTitle.Text = "В этой папке не найдены папки с llama-server.exe";
+		noServersTitle.Text = global::LlamaStudio.NativeLanguage.Text("В этой папке не найдены папки с llama-server.exe", "No folders containing llama-server.exe were found here");
 		noServersTitle.FontSize = 13.0;
 		noServersTitle.FontWeight = FontWeight.DemiBold;
 		noServersTitle.HorizontalAlignment = HorizontalAlignment.Center;
@@ -1580,7 +1580,7 @@ public class LlamaReleasesPage : UserControl
 		TextBlock noServersHintBase = (noServersHint = new TextBlock());
 		((ISupportInitialize)noServersHintBase).BeginInit();
 		children33.Add(noServersHintBase);
-		noServersHint.Text = "Установите сервер из списка слева или выберите другую папку";
+		noServersHint.Text = global::LlamaStudio.NativeLanguage.Text("Установите сервер из списка слева или выберите другую папку", "Install a server from the list on the left or choose another folder");
 		noServersHint.FontSize = 12.0;
 		noServersHint.HorizontalAlignment = HorizontalAlignment.Center;
 		noServersHint.Foreground = new ImmutableSolidColorBrush(4287931320u);

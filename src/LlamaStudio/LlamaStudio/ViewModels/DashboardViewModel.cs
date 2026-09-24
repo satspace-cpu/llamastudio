@@ -448,12 +448,12 @@ public class DashboardViewModel : ObservableObject, IDisposable
 				ramText = $"{ServerStatus.RamUsedGb:F1} / {s_totalRamGb:F1} GB";
 				if (ServerStatus.RamCommittedGb > 0.0)
 				{
-					ramText += $" · выделено: {ServerStatus.RamCommittedGb:F1} GB";
+					ramText += global::LlamaStudio.NativeLanguage.Text($" · выделено: {ServerStatus.RamCommittedGb:F1} GB", $" · allocated: {ServerStatus.RamCommittedGb:F1} GB");
 				}
 			}
 			else
 			{
-				ramText = $"Сервер не запущен / {s_totalRamGb:F1} GB";
+				ramText = global::LlamaStudio.NativeLanguage.Text($"Сервер не запущен / {s_totalRamGb:F1} GB", $"Server is stopped / {s_totalRamGb:F1} GB");
 			}
 			double cacheRamLimitGb = ServerStatus.CacheRamLimitGb;
 			if (!(cacheRamLimitGb > 0.0) && SelectedProfile?.CacheRam > 0)
@@ -462,7 +462,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
 			}
 			if (cacheRamLimitGb > 0.0)
 			{
-				ramText += $" · кэш: до {cacheRamLimitGb:F1} GB";
+				ramText += global::LlamaStudio.NativeLanguage.Text($" · кэш: до {cacheRamLimitGb:F1} GB", $" · cache: up to {cacheRamLimitGb:F1} GB");
 			}
 			return ramText;
 		}

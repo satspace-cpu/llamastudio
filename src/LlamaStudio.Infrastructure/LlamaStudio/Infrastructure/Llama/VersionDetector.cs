@@ -115,14 +115,14 @@ public class VersionDetector : IVersionDetector
 			{
 				ProcessStartInfo processStartInfo = new ProcessStartInfo
 				{
-					FileName = OperatingSystem.IsWindows() ? "cmd.exe" : exePath,
-					Arguments = OperatingSystem.IsWindows() ? "/c \"" + exePath + "\" --version" : "--version",
+					FileName = exePath,
 					WorkingDirectory = exeDirectory,
 					UseShellExecute = false,
 					RedirectStandardOutput = true,
 					RedirectStandardError = true,
 					CreateNoWindow = true
 				};
+				processStartInfo.ArgumentList.Add("--version");
 				foreach (DictionaryEntry environmentVariable in Environment.GetEnvironmentVariables())
 				{
 					processStartInfo.Environment[(string)environmentVariable.Key] = (string)environmentVariable.Value;
@@ -175,6 +175,10 @@ public class VersionDetector : IVersionDetector
 				if (releaseMatch.Success)
 				{
 					return (version: releaseMatch.Value.ToLowerInvariant(), commit: string.Empty, banner: banner, buildNumber: buildNumber, commitHash: commitHash);
+				}
+				if (!string.IsNullOrEmpty(buildNumber))
+				{
+					return (version: "b" + buildNumber, commit: string.Empty, banner: banner, buildNumber: buildNumber, commitHash: commitHash);
 				}
 				return (version: string.Empty, commit: string.Empty, banner: banner, buildNumber: buildNumber, commitHash: commitHash);
 			}

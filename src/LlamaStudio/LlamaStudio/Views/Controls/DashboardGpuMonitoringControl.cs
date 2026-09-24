@@ -75,7 +75,7 @@ public sealed class DashboardGpuMonitoringControl : UserControl
 		IsVisible = true;
 		StackPanel ram = new StackPanel { Spacing = 3 };
 		ram.Children.Add(new TextBlock { Text = "RAM", FontWeight = FontWeight.DemiBold, Foreground = Brush("#55D6BE") });
-		AddBar(ram, "ОЗУ", _viewModel.RamUsedPercent, _viewModel.RamUsedText, Brush("#10B981"));
+		AddBar(ram, global::LlamaStudio.NativeLanguage.Text("ОЗУ", "RAM"), _viewModel.RamUsedPercent, _viewModel.RamUsedText, Brush("#10B981"));
 		_cards.Children.Add(new Border { Padding = new Thickness(12), Child = ram, Background = ThemeBrushes.Get("GpuMonitorInner", "#111A2A"), CornerRadius = new CornerRadius(7) });
 		foreach (GpuInfo gpu in _viewModel.GpuInfos)
 		{

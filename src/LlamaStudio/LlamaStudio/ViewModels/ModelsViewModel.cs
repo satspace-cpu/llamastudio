@@ -196,7 +196,7 @@ public class ModelsViewModel : ObservableObject
 
 	public string HfCancelBtn => _loc.T("hf.cancel");
 
-	public string HfPauseBtn => "Пауза";
+	public string HfPauseBtn => global::LlamaStudio.NativeLanguage.Text("Пауза", "Pause");
 
 	public string HfSelectAllBtn => _loc.T("hf.select_all");
 
@@ -948,7 +948,7 @@ public class ModelsViewModel : ObservableObject
 	{
 		_hfDownloader.PauseDownloads();
 		IsHfDownloading = false;
-		HfStatus = "Загрузка приостановлена. Нажмите «Скачать выбранные», чтобы продолжить.";
+		HfStatus = global::LlamaStudio.NativeLanguage.Text("Загрузка приостановлена. Нажмите «Скачать выбранные», чтобы продолжить.", "Download paused. Click ‘Download selected’ to continue.");
 	}
 
 	[RelayCommand]

@@ -2875,7 +2875,7 @@ public class ChatPage : UserControl
 			}
 			IReadOnlyList<IStorageFile> readOnlyList = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
 			{
-				Title = "Выбрать изображения",
+				Title = global::LlamaStudio.NativeLanguage.Text("Выбрать изображения", "Select images"),
 				AllowMultiple = true,
 				FileTypeFilter = new FilePickerFileType[1]
 				{
@@ -2919,7 +2919,7 @@ public class ChatPage : UserControl
 			}
 			IReadOnlyList<IStorageFile> readOnlyList = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
 			{
-				Title = "Выбрать файлы",
+				Title = global::LlamaStudio.NativeLanguage.Text("Выбрать файлы", "Select files"),
 				AllowMultiple = true,
 				FileTypeFilter = new FilePickerFileType[1]
 				{

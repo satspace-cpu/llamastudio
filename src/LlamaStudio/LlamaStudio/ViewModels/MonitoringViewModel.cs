@@ -230,16 +230,16 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 				ramUsedText = $"{ServerStatus.RamUsedGb:F1} / {s_totalRamGb:F1} GB";
 				if (ServerStatus.RamCommittedGb > 0.0)
 				{
-					ramUsedText += $" · выделено: {ServerStatus.RamCommittedGb:F1} GB";
+					ramUsedText += global::LlamaStudio.NativeLanguage.Text($" · выделено: {ServerStatus.RamCommittedGb:F1} GB", $" · allocated: {ServerStatus.RamCommittedGb:F1} GB");
 				}
 			}
 			else
 			{
-				ramUsedText = $"Сервер не запущен / {s_totalRamGb:F1} GB";
+				ramUsedText = global::LlamaStudio.NativeLanguage.Text($"Сервер не запущен / {s_totalRamGb:F1} GB", $"Server is stopped / {s_totalRamGb:F1} GB");
 			}
 			if (ServerStatus.CacheRamLimitGb > 0.0)
 			{
-				ramUsedText += $" · кэш: до {ServerStatus.CacheRamLimitGb:F1} GB";
+				ramUsedText += global::LlamaStudio.NativeLanguage.Text($" · кэш: до {ServerStatus.CacheRamLimitGb:F1} GB", $" · cache: up to {ServerStatus.CacheRamLimitGb:F1} GB");
 			}
 			return ramUsedText;
 		}

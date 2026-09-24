@@ -1043,7 +1043,7 @@ public class App : Application
 			System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "LlamaStudio-recovered.log"), $"{DateTime.Now:O} [INIT] {ex}\n");
 			// r96: a failed init must not leave a windowless, trayless zombie —
 			// show the reason and exit (the user relaunches manually).
-			ShowStartupFailure("[INIT] инициализация", ex);
+			ShowStartupFailure(NativeLanguage.Text("[INIT] инициализация", "[INIT] initialization"), ex);
 			base.OnFrameworkInitializationCompleted();
 			(base.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
 			return;
@@ -1148,7 +1148,7 @@ public class App : Application
 				// is up, the user has nothing to click: show the error and exit.
 				if (mainWindowIsVisible == false && !IsTrayAvailable)
 				{
-					ShowStartupFailure("[WINDOW] окно и трей", ex);
+					ShowStartupFailure(NativeLanguage.Text("[WINDOW] окно и трей", "[WINDOW] window and tray"), ex);
 					classicDesktopStyleApplicationLifetime.Shutdown();
 				}
 			}
@@ -1414,7 +1414,7 @@ public class App : Application
 		try
 		{
 			NativeMenu menu = new NativeMenu();
-			NativeMenuItem showItem = new NativeMenuItem { Header = "Открыть Llama Studio" };
+			NativeMenuItem showItem = new NativeMenuItem { Header = NativeLanguage.Text("Открыть Llama Studio", "Open Llama Studio") };
 			showItem.Click += delegate { ShowWindowFromTray(); };
 			NativeMenu profilesMenu = new NativeMenu();
 			ISettings? settings = Services?.GetService<ISettings>();
@@ -1432,10 +1432,10 @@ public class App : Application
 					profilesMenu.Add(profileItem);
 				}
 			}
-			menu.Add(new NativeMenuItem { Header = "Профиль", Menu = profilesMenu });
-			NativeMenuItem startItem = new NativeMenuItem { Header = "Запустить сервер" };
+			menu.Add(new NativeMenuItem { Header = NativeLanguage.Text("Профиль", "Profile"), Menu = profilesMenu });
+			NativeMenuItem startItem = new NativeMenuItem { Header = NativeLanguage.Text("Запустить сервер", "Start server") };
 			startItem.Click += async delegate { await StartServerFromLinuxTrayAsync(); };
-			NativeMenuItem stopItem = new NativeMenuItem { Header = "Остановить сервер" };
+			NativeMenuItem stopItem = new NativeMenuItem { Header = NativeLanguage.Text("Остановить сервер", "Stop server") };
 			stopItem.Click += async delegate
 			{
 				IServerManager? server = Services?.GetService<IServerManager>();
@@ -1444,11 +1444,11 @@ public class App : Application
 					await server.StopAsync();
 				}
 			};
-			NativeMenuItem restartItem = new NativeMenuItem { Header = "Перезапустить сервер" };
+			NativeMenuItem restartItem = new NativeMenuItem { Header = NativeLanguage.Text("Перезапустить сервер", "Restart server") };
 			restartItem.Click += async delegate { await RestartServerFromLinuxTrayAsync(); };
-			NativeMenuItem monitoringItem = new NativeMenuItem { Header = "Окно мониторинга" };
+			NativeMenuItem monitoringItem = new NativeMenuItem { Header = NativeLanguage.Text("Окно мониторинга", "Monitoring window") };
 			monitoringItem.Click += delegate { ShowMonitoringWindow(); };
-			NativeMenuItem exitItem = new NativeMenuItem { Header = "Выход" };
+			NativeMenuItem exitItem = new NativeMenuItem { Header = NativeLanguage.Text("Выход", "Exit") };
 			exitItem.Click += delegate { RequestExitFromTray(force: true); };
 			menu.Add(showItem);
 			menu.Add(new NativeMenuItemSeparator());
@@ -2095,12 +2095,14 @@ public class App : Application
 	// MessageBox works even when the Avalonia UI failed to come up.
 	private static void ShowStartupFailure(string context, Exception exception)
 	{
-		string details = $"LlamaStudio не удалось открыть окно: {context}.\n\n{exception.GetType().Name}: {exception.Message}\n\nПодробности: %TEMP%\\LlamaStudio-recovered.log";
+		string details = NativeLanguage.Text(
+			$"LlamaStudio не удалось открыть окно: {context}.\n\n{exception.GetType().Name}: {exception.Message}\n\nПодробности: %TEMP%\\LlamaStudio-recovered.log",
+			$"Llama Studio could not open the window: {context}.\n\n{exception.GetType().Name}: {exception.Message}\n\nDetails: %TEMP%\\LlamaStudio-recovered.log");
 		if (OperatingSystem.IsWindows())
 		{
 			try
 			{
-				StartupMessageBoxW(IntPtr.Zero, details, "LlamaStudio — ошибка запуска", 0x10u);
+				StartupMessageBoxW(IntPtr.Zero, details, NativeLanguage.Text("LlamaStudio — ошибка запуска", "Llama Studio — startup error"), 0x10u);
 			}
 			catch
 			{

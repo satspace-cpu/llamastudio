@@ -1286,16 +1286,16 @@ public class ServerViewModel : ObservableObject
 				ramText = $"{RamUsedGb:F1} / {s_totalRamGb:F1} GB";
 				if (RamCommittedGb > 0.0)
 				{
-					ramText += $" · выделено: {RamCommittedGb:F1} GB";
+					ramText += global::LlamaStudio.NativeLanguage.Text($" · выделено: {RamCommittedGb:F1} GB", $" · allocated: {RamCommittedGb:F1} GB");
 				}
 			}
 			else
 			{
-				ramText = $"Сервер не запущен / {s_totalRamGb:F1} GB";
+				ramText = global::LlamaStudio.NativeLanguage.Text($"Сервер не запущен / {s_totalRamGb:F1} GB", $"Server is stopped / {s_totalRamGb:F1} GB");
 			}
 			if (CacheRam > 0)
 			{
-				ramText += $" · кэш: до {CacheRam / 1024.0:F1} GB";
+				ramText += global::LlamaStudio.NativeLanguage.Text($" · кэш: до {CacheRam / 1024.0:F1} GB", $" · cache: up to {CacheRam / 1024.0:F1} GB");
 			}
 			return ramText;
 		}
@@ -4610,17 +4610,17 @@ public class ServerViewModel : ObservableObject
 
 	private void SetRpcConnectingStatus()
 	{
-		RpcConnectionStatus = "Подключение...";
+		RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Подключение...", "Connecting...");
 	}
 
 	private void SetRpcConnectedStatus()
 	{
-		RpcConnectionStatus = "Подключено — данные получены";
+		RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Подключено — данные получены", "Connected — data received");
 	}
 
 	private void SetRpcDisconnectedStatus()
 	{
-		RpcConnectionStatus = "Отключено";
+		RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Отключено", "Disconnected");
 	}
 
 	public string RpcHost
@@ -5608,7 +5608,7 @@ public class ServerViewModel : ObservableObject
 		if (PassiveRpcMode)
 		{
 			RpcConnectionVerified = false;
-			RpcConnectionStatus = "Пассивный режим: RPC проверяется только самим llama-server.";
+			RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Пассивный режим: RPC проверяется только самим llama-server.", "Passive mode: RPC is checked only by llama-server itself.");
 			await RefreshGpuAsync();
 			return;
 		}
@@ -5667,7 +5667,7 @@ public class ServerViewModel : ObservableObject
 		if (PassiveRpcMode)
 		{
 			RpcSshConnected = false;
-			RpcSshStatus = "Пассивный режим: SSH-управление отключено для теста.";
+			RpcSshStatus = global::LlamaStudio.NativeLanguage.Text("Пассивный режим: SSH-управление отключено для теста.", "Passive mode: SSH management is disabled for this test.");
 			return;
 		}
 
@@ -5799,7 +5799,7 @@ public class ServerViewModel : ObservableObject
 		if (PassiveRpcMode)
 		{
 			RpcConnectionVerified = false;
-			RpcConnectionStatus = "Пассивный режим: запустите ggml-rpc-server вручную.";
+			RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Пассивный режим: запустите ggml-rpc-server вручную.", "Passive mode: start ggml-rpc-server manually.");
 			return;
 		}
 
@@ -5915,7 +5915,7 @@ public class ServerViewModel : ObservableObject
 		if (PassiveRpcMode)
 		{
 			RpcConnectionVerified = false;
-			RpcConnectionStatus = "Пассивный режим: удалённый RPC не управляется LlamaStudio.";
+			RpcConnectionStatus = global::LlamaStudio.NativeLanguage.Text("Пассивный режим: удалённый RPC не управляется LlamaStudio.", "Passive mode: remote RPC is not managed by Llama Studio.");
 			return;
 		}
 
@@ -6011,12 +6011,12 @@ public class ServerViewModel : ObservableObject
 				.Distinct(StringComparer.Ordinal)
 				.ToArray();
 			return messages.Length == 0
-				? "Удалённый PowerShell вернул служебный CLIXML без текста ошибки."
+				? global::LlamaStudio.NativeLanguage.Text("Удалённый PowerShell вернул служебный CLIXML без текста ошибки.", "Remote PowerShell returned CLIXML metadata without an error message.")
 				: string.Join(" ", messages);
 		}
 		catch
 		{
-			return "Удалённый PowerShell вернул служебный CLIXML; подробный текст недоступен.";
+			return global::LlamaStudio.NativeLanguage.Text("Удалённый PowerShell вернул служебный CLIXML; подробный текст недоступен.", "Remote PowerShell returned CLIXML metadata; detailed text is unavailable.");
 		}
 	}
 
@@ -6613,7 +6613,7 @@ public class ServerViewModel : ObservableObject
 			await _dialog.ShowErrorAsync(_loc.T("dialog.no_other_profiles"));
 			return;
 		}
-		string Decorate(ServerProfile p) => HasMissingModel(p) ? p.Name + " (файлы модели удалены)" : p.Name;
+		string Decorate(ServerProfile p) => HasMissingModel(p) ? p.Name + global::LlamaStudio.NativeLanguage.Text(" (файлы модели удалены)", " (model files missing)") : p.Name;
 		string selectedName = await _dialog.ShowProfileSelectAsync(_loc.T("dialog.copy_settings_title"), string.Format(_loc.T("server.copy_to_profile_fmt"), SelectedProfile.Name), others.Select(Decorate));
 		if (selectedName != null)
 		{
@@ -7042,7 +7042,7 @@ public class ServerViewModel : ObservableObject
 			string rootPath = (Path.GetPathRoot(fullPath) ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 			if (string.Equals(fullPath, rootPath, StringComparison.OrdinalIgnoreCase))
 			{
-				await _dialog.ShowErrorAsync("Выберите папку с версиями llama.cpp, а не корень диска.");
+				await _dialog.ShowErrorAsync(global::LlamaStudio.NativeLanguage.Text("Выберите папку с версиями llama.cpp, а не корень диска.", "Select the folder containing llama.cpp versions, not the root of a drive."));
 				return;
 			}
 			_settings.LlamaCppBaseDirectory = path;
@@ -7334,7 +7334,7 @@ public class ServerViewModel : ObservableObject
 	public async Task<int> ImportBatTextAsync(string content, string? profileId)
 	{
 		if (string.IsNullOrWhiteSpace(content))
-			throw new InvalidOperationException("BAT-файл пуст.");
+			throw new InvalidOperationException(global::LlamaStudio.NativeLanguage.Text("BAT-файл пуст.", "The BAT file is empty."));
 
 		string? command = null;
 	foreach (string rawLine in content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None))
@@ -7351,7 +7351,7 @@ public class ServerViewModel : ObservableObject
 			}
 		}
 		if (string.IsNullOrWhiteSpace(command))
-			throw new InvalidOperationException("В BAT-файле не найдена команда llama-server.");
+			throw new InvalidOperationException(global::LlamaStudio.NativeLanguage.Text("В BAT-файле не найдена команда llama-server.", "No llama-server command was found in the BAT file."));
 
 		string args = command;
 		if (args.StartsWith('"'))
@@ -7368,7 +7368,7 @@ public class ServerViewModel : ObservableObject
 		ServerProfile? profile = !string.IsNullOrWhiteSpace(profileId) ? await _profileManager.GetProfileAsync(profileId) : SelectedProfile;
 		profile ??= SelectedProfile;
 		if (profile == null)
-			throw new InvalidOperationException("Профиль не выбран.");
+			throw new InvalidOperationException(global::LlamaStudio.NativeLanguage.Text("Профиль не выбран.", "No profile is selected."));
 		ApplyParsedArgsToProfile(profile, parsed);
 		ApplyProfileToSettings(profile);
 		await _profileManager.SaveProfileAsync(profile);

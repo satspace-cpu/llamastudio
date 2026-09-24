@@ -289,27 +289,27 @@ public class ArgPickerViewModel : ObservableObject
 					string allowedValuesDisplay = string.Join(", ", entry.AllowedValues);
 					if (string.IsNullOrWhiteSpace(flagValue))
 					{
-						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_value_enum"), entry.Name, allowedValuesDisplay) : $"Аргумент {entry.Name} требует значение: [{allowedValuesDisplay}]");
+						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_value_enum"), entry.Name, allowedValuesDisplay) : global::LlamaStudio.NativeLanguage.Text($"Аргумент {entry.Name} требует значение: [{allowedValuesDisplay}]", $"Argument {entry.Name} requires a value: [{allowedValuesDisplay}]"));
 					}
 					if (!entry.AllowedValues.Contains<string>(flagValue, StringComparer.OrdinalIgnoreCase))
 					{
-						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.invalid_value_enum"), entry.Name, flagValue, allowedValuesDisplay) : $"Недопустимое значение для {entry.Name}: \"{flagValue}\". Допустимо: [{allowedValuesDisplay}]");
+						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.invalid_value_enum"), entry.Name, flagValue, allowedValuesDisplay) : global::LlamaStudio.NativeLanguage.Text($"Недопустимое значение для {entry.Name}: \"{flagValue}\". Допустимо: [{allowedValuesDisplay}]", $"Invalid value for {entry.Name}: \"{flagValue}\". Allowed: [{allowedValuesDisplay}]"));
 					}
 				}
 				else if (entry.IsNumeric)
 				{
 					if (string.IsNullOrWhiteSpace(flagValue))
 					{
-						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_numeric"), entry.Name) : ("Аргумент " + entry.Name + " требует числовое значение"));
+						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_numeric"), entry.Name) : global::LlamaStudio.NativeLanguage.Text("Аргумент " + entry.Name + " требует числовое значение", "Argument " + entry.Name + " requires a numeric value"));
 					}
 					if (!double.TryParse(flagValue, out var _))
 					{
-						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.invalid_numeric"), entry.Name, flagValue) : $"Недопустимое значение для {entry.Name}: \"{flagValue}\". Требуется число.");
+						return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.invalid_numeric"), entry.Name, flagValue) : global::LlamaStudio.NativeLanguage.Text($"Недопустимое значение для {entry.Name}: \"{flagValue}\". Требуется число.", $"Invalid value for {entry.Name}: \"{flagValue}\". A number is required."));
 					}
 				}
 				else if (string.IsNullOrWhiteSpace(flagValue))
 				{
-					return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_value"), entry.Name) : ("Аргумент " + entry.Name + " требует значение"));
+					return (Args: args, Error: (_loc != null) ? string.Format(_loc.T("argpicker.requires_value"), entry.Name) : global::LlamaStudio.NativeLanguage.Text("Аргумент " + entry.Name + " требует значение", "Argument " + entry.Name + " requires a value"));
 				}
 				if (!string.IsNullOrWhiteSpace(flagValue))
 				{
