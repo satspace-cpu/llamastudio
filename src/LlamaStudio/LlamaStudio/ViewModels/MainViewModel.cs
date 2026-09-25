@@ -54,6 +54,8 @@ public class MainViewModel : ObservableObject
 
 	private readonly MonitoringViewModel _monitoringVm;
 
+	private readonly BenchmarkCenterViewModel _benchmarkVm;
+
 	private readonly LlamaReleasesViewModel _llamaReleases;
 
 	private readonly SupportViewModel _support;
@@ -275,7 +277,7 @@ public class MainViewModel : ObservableObject
 
 	public IRelayCommand OpenWebUiCommand => openWebUiCommand ?? (openWebUiCommand = new RelayCommand(OpenWebUi));
 
-	public MainViewModel(IServerManager serverManager, IProfileManager profileManager, ISettings settings, ILogService log, ILocalizationService loc, IDialogService dialog, DashboardViewModel dashboard, ModelsViewModel models, ServerViewModel server, ProfilesViewModel profiles, LogsViewModel logs, SettingsViewModel settingsVm, ApiTestViewModel apiTest, ChatViewModel chat, MonitoringViewModel monitoringVm, LlamaReleasesViewModel llamaReleases, SupportViewModel support, WebUiService webUiService)
+	public MainViewModel(IServerManager serverManager, IProfileManager profileManager, ISettings settings, ILogService log, ILocalizationService loc, IDialogService dialog, DashboardViewModel dashboard, ModelsViewModel models, ServerViewModel server, ProfilesViewModel profiles, LogsViewModel logs, SettingsViewModel settingsVm, ApiTestViewModel apiTest, ChatViewModel chat, MonitoringViewModel monitoringVm, BenchmarkCenterViewModel benchmarkVm, LlamaReleasesViewModel llamaReleases, SupportViewModel support, WebUiService webUiService)
 	{
 		_serverManager = serverManager;
 		_profileManager = profileManager;
@@ -292,6 +294,7 @@ public class MainViewModel : ObservableObject
 		_apiTest = apiTest;
 		_chat = chat;
 		_monitoringVm = monitoringVm;
+		_benchmarkVm = benchmarkVm;
 		_llamaReleases = llamaReleases;
 		_support = support;
 		_webUiService = webUiService;
@@ -410,7 +413,7 @@ public class MainViewModel : ObservableObject
 				"Logs" => new LogsPage(_logs), 
 				"ApiTest" => new ApiTestPage(_apiTest), 
 				"Chat" => new ChatPage(_chat), 
-				"Monitoring" => new MonitoringPage(_monitoringVm), 
+				"Monitoring" => new MonitoringPage(_monitoringVm, _benchmarkVm), 
 				"LlamaReleases" => new LlamaReleasesPage(_llamaReleases), 
 				"Settings" => new SettingsPage(_settingsVm), 
 				"Support" => new SupportPage(_support), 
@@ -519,6 +522,14 @@ public class MainViewModel : ObservableObject
 				CanRestartServer = true;
 				_log.Information($"Server already running at {host}:{port}", "UI");
 				await _dialog.ShowInfoAsync(_loc.T("dialog.server_already_running"));
+				return;
+			}
+			// r111: a start is already in progress (e.g. auto-start on boot with a
+			// big model still loading) — do not start a second server.
+			if ((await _serverManager.GetStatusAsync()).State == ServerState.Starting)
+			{
+				_log.Information("Start requested while server is already starting", "UI");
+				await _dialog.ShowInfoAsync(_loc.T("dialog.server_starting"));
 				return;
 			}
 			ServerProfile profile = await GetActiveProfileAsync();
@@ -767,6 +778,16 @@ public class MainViewModel : ObservableObject
 				}
 				OnPropertyChanged("StartBtnText");
 				OnPropertyChanged("StopBtnText");
+			}
+			else if (serverStatus.State == ServerState.Starting)
+			{
+				// r111: a start is in progress (auto-start on app launch while the
+				// model is still loading). Do NOT revert to the active
+				// "Start server" button — that made users press "Start" again
+				// while the server was already loading.
+				CanStartServer = false;
+				CanStopServer = true;
+				CanRestartServer = true;
 			}
 			else
 			{

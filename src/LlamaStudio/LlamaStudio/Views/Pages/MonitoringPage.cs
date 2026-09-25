@@ -89,12 +89,28 @@ public class MonitoringPage : UserControl
 
 	private static Action<object> _0021XamlIlPopulateOverride;
 
-	public MonitoringPage(MonitoringViewModel vm)
+	public MonitoringPage(MonitoringViewModel vm, BenchmarkCenterViewModel? benchmarkVm = null)
 	{
 		InitializeComponent();
 		base.DataContext = (_vm = vm);
 		if (Content is ScrollViewer contentScrollViewer && contentScrollViewer.Content is StackPanel rootStackPanel)
 		{
+			// r101/r103: Benchmark Center — right under the big TPS card.
+			// r103: the VM is a DI singleton so a running test survives page navigation.
+			// r105: BenchmarkVm MUST be assigned BEFORE DataContext — the control
+			// reacts to DataContext right away and would otherwise grab a fresh
+			// local VM (losing a running test on navigation).
+			rootStackPanel.Children.Insert(1, new LlamaStudio.Views.Controls.BenchmarkCenterControl { BenchmarkVm = benchmarkVm, DataContext = vm });
+			// r107: the speed card («Ответ/Промпт» big numbers + green «Быстрый
+			// тест» button) moves to the VERY TOP of the page (above the
+			// Benchmark Center and its instruction) — the real numbers must be
+			// visible at all times while tests run.
+			// After the insert above: [0]=header, [1]=benchmark, [2]=speed card.
+			if (rootStackPanel.Children.Count > 2 && rootStackPanel.Children[2] is Border speedCard)
+			{
+				rootStackPanel.Children.RemoveAt(2);
+				rootStackPanel.Children.Insert(1, speedCard);
+			}
 			rootStackPanel.Children.Add(new LlamaStudio.Views.Controls.MultiGpuMonitoringControl { DataContext = vm });
 			// r94: persist per-profile GPU power limits (load on refresh, save on apply).
 var powerControl = new LlamaStudio.Views.Controls.GpuPowerLimitControl

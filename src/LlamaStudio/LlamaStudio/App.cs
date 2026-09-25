@@ -1330,6 +1330,9 @@ public class App : Application
 			services.AddSingleton<DashboardViewModel>();
 			services.AddSingleton<ModelsViewModel>();
 			services.AddSingleton<MonitoringViewModel>();
+			// r103: Benchmark Center VM is a singleton — survives page navigation,
+			// so a running test keeps its state and the Stop button stays alive.
+			services.AddSingleton<BenchmarkCenterViewModel>((IServiceProvider sp) => new BenchmarkCenterViewModel(sp.GetRequiredService<MonitoringViewModel>()));
 			services.AddSingleton<ServerViewModel>();
 			services.AddSingleton<ProfilesViewModel>();
 			services.AddSingleton<LogsViewModel>();

@@ -96,6 +96,10 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 	private readonly IGpuMonitor _gpuMonitor;
 
 	private readonly ILocalizationService _loc;
+	/// <summary>r114: localization accessor (used by BenchmarkCenterViewModel).</summary>
+	public ILocalizationService Loc => _loc;
+
+	private readonly IDialogService _dialog;
 
 	private readonly DispatcherTimer _gpuTimer;
 	private bool _gpuRefreshInProgress;
@@ -819,7 +823,16 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 	[DllImport("kernel32", SetLastError = true)]
 	private static extern bool GlobalMemoryStatusEx(nint lpBuffer);
 
-	public MonitoringViewModel(IServerManager serverManager, IProfileManager profileManager, ISettings settings, ILogService log, IGpuMonitor gpuMonitor, ILocalizationService loc)
+	// r101: shared service accessors for the Benchmark Center (same singletons, no duplication).
+	public IServerManager ServerManager { get; }
+	public IProfileManager ProfileManager { get; }
+	public ISettings BenchmarkSettings { get; }
+	public ILogService BenchmarkLog { get; }
+	public IGpuMonitor GpuMonitorService { get; }
+	public ILocalizationService LocService { get; }
+	public IDialogService DialogService { get; }
+
+	public MonitoringViewModel(IServerManager serverManager, IProfileManager profileManager, ISettings settings, ILogService log, IGpuMonitor gpuMonitor, ILocalizationService loc, IDialogService dialog)
 	{
 		_serverManager = serverManager;
 		_profileManager = profileManager;
@@ -827,6 +840,14 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 		_log = log;
 		_gpuMonitor = gpuMonitor;
 		_loc = loc;
+		_dialog = dialog;
+		ServerManager = serverManager;
+		ProfileManager = profileManager;
+		BenchmarkSettings = settings;
+		BenchmarkLog = log;
+		GpuMonitorService = gpuMonitor;
+		LocService = loc;
+		DialogService = dialog;
 		ApplySettings();
 		_gpuTimer = new DispatcherTimer
 		{
@@ -876,6 +897,17 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 	{
 		_gpuTimer.Stop();
 		_benchmarkClient.Dispose();
+	}
+
+	// r101: Benchmark Center updates the two big TPS numbers after its own quick test.
+	public void SetBenchmarkTps(double generationTps, double promptTps)
+	{
+		_lastTps = generationTps;
+		_lastPromptTps = promptTps;
+		OnPropertyChanged("TpsText");
+		OnPropertyChanged("PromptTpsText");
+		OnPropertyChanged("TpsPercent");
+		OnPropertyChanged("TpsBrush");
 	}
 
 	[RelayCommand]
@@ -1116,6 +1148,9 @@ public class MonitoringViewModel : ObservableObject, IDisposable
 			OnPropertyChanged("TpsPercent");
 			OnPropertyChanged("TpsBrush");
 			BenchmarkResult = "";
+			// r107: feed the Benchmark Center with this quick test — the charts
+			// (bars) and the history dropdown get the result, nothing is empty.
+			BenchmarkCenterViewModel.Current?.RecordQuickTest(generationTps, promptTps, promptTokens, generatedTokens, promptElapsedMs, totalElapsedSeconds);
 		}
 		catch (Exception ex2)
 		{

@@ -623,7 +623,12 @@ public class ServerViewModel : ObservableObject
 
 	public string Title => _loc.T("server.title");
 
-	public string StartBtn => _loc.T("server.start_btn");
+	/// <summary>r105: while a Benchmark test is going on (llama-bench owns the
+	/// GPU and the server is stopped by design) starting the server is forbidden —
+	/// the button says exactly that instead of «Запустить сервер».</summary>
+	public string StartBtn => BenchmarkCenterViewModel.Current is { IsRunning: true }
+		? "● Идёт тест llama-bench"
+		: _loc.T("server.start_btn");
 
 	public string StopBtn => _loc.T("server.stop_btn");
 
@@ -4498,6 +4503,10 @@ public class ServerViewModel : ObservableObject
 		_versionCache.Changed += OnVersionCacheChanged;
 		_settings.SettingsChanged += OnSettingsChanged;
 		_profileManager.ProfileChanged += OnProfileChanged;
+		// r105: the start button must reflect a running benchmark (llama-bench):
+		// while a test goes on the server must not be started, and the button
+		// says so.
+		BenchmarkCenterViewModel.InstanceRunningChanged += OnBenchmarkRunningChanged;
 		base.PropertyChanged += OnViewModelPropertyChanged;
 		_updater.CliChangesDetected += OnCliChangesDetected;
 		// Defaults below are only constructor bootstrap values. Keep the VM in
@@ -4524,6 +4533,12 @@ public class ServerViewModel : ObservableObject
 		// The version cache is loaded during application startup. Populate the
 		// server selector immediately so it is usable on the first page open.
 		ScanServersAsync();
+	}
+
+	/// <summary>r105: refresh the start-button label when a benchmark test starts/stops.</summary>
+	private void OnBenchmarkRunningChanged()
+	{
+		OnPropertyChanged(nameof(StartBtn));
 	}
 
 	[GeneratedCode("CommunityToolkit.Mvvm.SourceGenerators.ObservablePropertyGenerator", "8.3.0.0")]
@@ -5400,16 +5415,30 @@ public class ServerViewModel : ObservableObject
 			IReadOnlyList<GpuInfo> detected = await _gpuMonitor.GetGpuInfosAsync();
 			if (detected.Count > 0)
 			{
+				// r99: self-heal. If the pending selection was somehow emptied while
+				// a profile with an explicit selection is active (e.g. overlapping
+				// refreshes across a profile switch), do NOT treat the empty set as
+				// "all cards" (that would light up every card in the UI). Re-sync
+				// from the profile — the profile is the source of truth.
+				if (_gpuSelectionInitialized && _pendingGpuSelection.Length == 0
+					&& SelectedProfile?.SelectedGpuIndices is { Length: > 0 } profileSelection)
+				{
+					_pendingGpuSelection = profileSelection;
+				}
 				// Keep the profile selection for devices that are temporarily absent.
 				// The missing GPU is excluded from the current runtime list, but its
 				// index must remain pending so it can be restored when the device returns.
-				HashSet<int> selected = _gpuSelectionInitialized
-					? new HashSet<int>(_pendingGpuSelection)
-					: new HashSet<int>(_gpuInfos.Where((GpuInfo gpu) => gpu.IsSelected).Select((GpuInfo gpu) => gpu.Index));
+				// r99: the source of truth for the selection is the pending
+				// (profile-driven) list — never the stale in-memory GpuInfos. At
+				// startup _gpuInfos is still empty, and the old "empty => all
+				// cards" fallback then lit up every card; the next save/start
+				// wrote that wrong selection back into the profile file.
+				HashSet<int> selected = new HashSet<int>(_pendingGpuSelection);
+				bool useAllDetectedGpus = selected.Count == 0;
 				List<GpuInfo> refreshedGpuInfos = new List<GpuInfo>();
 				foreach (GpuInfo gpu in detected)
 				{
-					gpu.IsSelected = _gpuSelectionInitialized ? selected.Contains(gpu.Index) : (_pendingGpuSelection.Length == 0 || _pendingGpuSelection.Contains(gpu.Index));
+					gpu.IsSelected = useAllDetectedGpus || selected.Contains(gpu.Index);
 					refreshedGpuInfos.Add(gpu);
 				}
 				if (RpcEnabled && RpcSshConnected)
@@ -5425,11 +5454,6 @@ public class ServerViewModel : ObservableObject
 						Name = "Remote GPU (RPC)",
 						IsSelected = true,
 					});
-				}
-				bool useAllDetectedGpus = selected.Count == 0;
-				foreach (GpuInfo gpu in refreshedGpuInfos)
-				{
-					gpu.IsSelected = useAllDetectedGpus || selected.Contains(gpu.Index);
 				}
 				if (HasSameGpuStructure(_gpuInfos, refreshedGpuInfos))
 				{
@@ -6410,6 +6434,15 @@ public class ServerViewModel : ObservableObject
 	[RelayCommand]
 	public async Task StartServerAsync()
 	{
+		// r105: never start the server while a Benchmark test is running —
+		// ENGINE-тест остановил сервер намеренно и вернёт его сам после теста.
+		if (BenchmarkCenterViewModel.Current is { IsRunning: true })
+		{
+			ErrorMessage = "Идёт тест Benchmark (llama-bench) — сервер запустится автоматически после завершения теста. Остановите тест кнопкой «■ Стоп» на вкладке «Мониторинг», если нужно запустить сервер сейчас.";
+			_log.Error("StartServer blocked: benchmark test in progress", "Server");
+			State = ServerState.Error;
+			return;
+		}
 		if (SelectedProfile == null)
 		{
 			ErrorMessage = _loc.T("server.no_profile_selected");

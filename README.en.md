@@ -1,5 +1,3 @@
-**[Русский](README.md)** · **[English](README.en.md)**
-
 # Llama Studio
 
 **Llama Studio** is a manager for local GGUF models and [llama.cpp](https://github.com/ggml-org/llama.cpp) servers. One application: it starts and controls `llama-server`, manages model profiles, GPU distribution, Hugging Face model downloads and llama.cpp builds.
@@ -8,6 +6,8 @@ The interface is dark-themed, available in **English and Russian**. It works in 
 
 - **Desktop** (Avalonia) — the regular application window (Windows and Linux);
 - **Web interface** — a built-in server reachable from any browser over the network (default `http://<server-ip>:8090`). The web pages are identical to the desktop pages; the screenshots in this guide are of the web interface.
+
+ [Русская версия](README.md)
 
 ## Contents
 
@@ -39,6 +39,7 @@ The interface is dark-themed, available in **English and Russian**. It works in 
 - Distribute a model across one or several GPUs without typing device strings by hand.
 - Manual tensor split or automatic distribution by llama.cpp.
 - Monitoring: VRAM, RAM (including committed memory and cache), GPU load, power, temperatures, fans.
+- **Benchmark Center**: built-in speed tests (Quick, Prefill by points, TG by depth, llama-bench, Full), live PP/TG charts per context point, run history, comparison of up to 4 runs (Δ%/×N), JSON export/import.
 - Hugging Face search, repository file inspection and GGUF downloads with pause and resume.
 - Chat through llama-server's built-in web interface.
 - Network web interface, logs, system tray (Windows), built-in app updates.
@@ -271,6 +272,54 @@ The **RAM** card shows the system:
 - **committed: N GB** — memory committed by the OS for the llama-server process (including the model if it is in RAM/mmap);
 - **cache: up to N GB** — the RAM-cache limit from the profile (KV offload).
 
+### 9.3. Benchmark Center
+
+Below the “Generation speed” card — the **Benchmark Center**: a built-in performance instrument for the current configuration (model + profile + GPU). Available both in the desktop app and in the web interface — the same UI, RU/EN.
+
+![Benchmark Center](screenshots/web-bench-01.png)
+
+**What is measured.** For every context control point the app computes:
+
+- **PP tok/s** — prompt processing (prefill) speed;
+- **TG tok/s** — token-by-token generation speed;
+- **E2E** — total time of the point (s);
+- **TTFT** — time to first token (ms);
+- **ms/tok** — milliseconds per token;
+- **Power (avg/peak)** — average/peak power (W);
+- **VRAM peak** — peak VRAM (GB);
+- **MTP** — the MTP multiplier, if enabled.
+
+**Points** are expressed as a percentage of the “safe maximum” context (the model fits with a margin) — e.g. 6 points from 6.25% to 90%. As each point completes, the charts and the table **update live**.
+
+### 9.4. Tests and presets
+
+The **Start** button runs the selected test:
+
+| Test | What it does | Duration |
+|---|---|---|
+| **Quick test** | one iteration at the profile depth | ~10–30 s |
+| **Prefill — prefill by points** | PP tok/s at every context point | 1–5 min |
+| **Depth — TG by depth** | TG tok/s at every depth point | 2–10 min |
+| **Engine — llama-bench (PP/TG)** | external `llama-bench` (if installed): PP and TG at 12.5/25/50/75% | 1–5 min |
+| **Full — everything** | Prefill + Depth + (llama-bench) | 5–15 min |
+
+Additionally:
+
+- **Preset** — a ready set of points (Quick / 6 points / 8 points / full range);
+- **Custom points** — toggle it and type your own depths, e.g. `16K, 32K, 64K, 128K`;
+- **Warm-up** — a warm-up pass before the real measurement (each point is measured twice, the second run is recorded).
+
+### 9.5. History and comparison (slots A–D)
+
+![History and comparison](screenshots/web-bench-02.png)
+
+- **History** — every completed run (test, model, date). A run can be **opened** (its charts and table are loaded into the center), **exported to JSON** (single or all), **imported** from another machine, and **deleted**.
+- **Comparison** — up to **four** runs can be pinned into slots **A–D**: the comparison table shows **Δ%** (percent difference) and **×N** (how many times faster/slower) per point relative to slot A. Typical use: “profile before vs after”, “model A vs model B”, “MTP on vs off”.
+
+The web interface supports both languages — the same center in English:
+
+![Benchmark Center (EN)](screenshots/web-bench-03.png)
+
 ## 10. Measuring speed
 
 At the top of “Monitoring” (and “Server”) — the **Generation speed** block with the **Measure speed** button:
@@ -373,4 +422,4 @@ Linux: download the new archive from [Releases](https://github.com/satspace-cpu/
 
 ---
 
-
+*Draft of the user guide. Web screenshots were taken from a live installation (Linux, 2× NVIDIA CMP 170HX). Desktop window screenshots will be added before release.*

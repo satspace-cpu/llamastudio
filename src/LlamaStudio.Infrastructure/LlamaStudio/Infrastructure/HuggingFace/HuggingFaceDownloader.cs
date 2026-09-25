@@ -255,7 +255,10 @@ public class HuggingFaceDownloader : IHuggingFaceDownloader
 						else if (!string.IsNullOrEmpty(file.Sha256))
 						{
 							file.Status = "Verifying hash...";
-							string localHash = ComputeSha256(localPath);
+							// r100: the synchronous full-file SHA256 used to run on the UI thread (async
+// continuations return to the UI sync context), freezing the whole shell for
+// minutes on large models. Offload to the thread pool (cancellable).
+							string localHash = await Task.Run(() => ComputeSha256(localPath), ct);
 							if (string.Equals(localHash, file.Sha256, StringComparison.OrdinalIgnoreCase))
 							{
 								isCompleted = true;
@@ -333,7 +336,7 @@ public class HuggingFaceDownloader : IHuggingFaceDownloader
 									}
 									catch (IOException) when (k < 4)
 									{
-										Thread.Sleep(500);
+										await Task.Delay(500, ct);
 										continue;
 									}
 									break;
@@ -347,7 +350,7 @@ public class HuggingFaceDownloader : IHuggingFaceDownloader
 						}
 						catch (IOException) when (j < 19)
 						{
-							Thread.Sleep(500);
+							await Task.Delay(500, ct);
 							continue;
 						}
 						break;
@@ -636,7 +639,8 @@ public class HuggingFaceDownloader : IHuggingFaceDownloader
 			if (!string.IsNullOrEmpty(expectedHash))
 			{
 				this.StatusMessage?.Invoke(this, "Verifying SHA-256 hash...");
-				string actualHash = ComputeSha256(tempPath);
+				// r100: off the UI thread (see DownloadSelectedAsync).
+				string actualHash = await Task.Run(() => ComputeSha256(tempPath), downloadToken);
 				if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
 				{
 					string message = $"SHA-256 hash mismatch for downloaded model: expected {expectedHash}, got {actualHash}. File may be corrupted or tampered with.";
